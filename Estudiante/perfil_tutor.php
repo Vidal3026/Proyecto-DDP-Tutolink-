@@ -10,6 +10,48 @@ if (!isset($_GET['tutor_id']) || !is_numeric($_GET['tutor_id'])) {
 
 $tutor_id = $_GET['tutor_id'];
 
+//obtener fecha php
+// --- Nueva Función PHP para obtener la fecha de la próxima ocurrencia del día ---
+/**
+ * Calcula la fecha real de la próxima ocurrencia de un día de la semana (LUNES, MARTES, etc.).
+ * @param string $dayName El nombre del día de la semana en mayúsculas (LUNES, MARTES...).
+ * @return string La fecha en formato YYYY-MM-DD.
+ */
+function getNextDateForDayPHP($dayName)
+{
+    // Definimos el mapeo de días de la semana de PHP (1 = Lunes, 7 = Domingo)
+    $day_map = [
+        'LUNES' => 1,
+        'MARTES' => 2,
+        'MIÉRCOLES' => 3,
+        'JUEVES' => 4,
+        'VIERNES' => 5,
+        'SÁBADO' => 6,
+        'DOMINGO' => 7
+    ];
+
+    if (!isset($day_map[$dayName])) {
+        return '';
+    }
+
+    $targetDay = $day_map[$dayName];
+    $currentDay = (int) date('N'); // Día actual (1=Lunes, 7=Domingo)
+
+    // Calculamos la diferencia
+    $diff = $targetDay - $currentDay;
+
+    // Si el día ya pasó esta semana, sumamos 7 días para ir a la próxima semana
+    if ($diff <= 0) {
+        $diff += 7;
+    }
+
+    // Calculamos la fecha real sumando la diferencia de días a la fecha actual
+    $nextDate = date('Y-m-d', strtotime("+$diff days"));
+
+    return $nextDate;
+}
+// -----------------------------------------------------------------------------
+
 // 2. Consulta para obtener todos los detalles del tutor
 try {
     $sql_tutor = "
@@ -266,53 +308,92 @@ $ruta_imagen = !empty($tutor_detalle['perfil_imagen']) ?
 
                             <div class="card shadow-lg mb-4">
                                 <div class="card-header bg-warning text-dark">
-                                    <i class="fas fa-clipboard-check me-1"></i> Agendar Tutoría
+                                    <i class="fas fa-calendar-check me-1"></i> Agendar Tutoría
                                 </div>
                                 <div class="card-body">
-                                    <p class="text-muted">Utiliza este formulario para solicitar una tutoría con
-                                        <?= htmlspecialchars($tutor_detalle['nombre_tutor']) ?>.
-                                    </p>
-                                    <form action="procesar_agendamiento.php" method="POST">
-                                        <input type="hidden" name="tutor_id" value="<?= $tutor_id ?>">
 
-                                        <div class="mb-3">
-                                            <label for="materia_agendar" class="form-label">Materia a Agendar</label>
-                                            <select class="form-select" id="materia_agendar" name="oferta_id" required>
-                                                <option value="" disabled selected>Seleccione una materia</option>
+                                    <div class="mb-4">
+                                        <label for="materia_seleccionada" class="form-label fw-bold">1. Selecciona la
+                                            Materia:</label>
+                                        <select class="form-select" id="materia_seleccionada" required>
+                                            <option value="" disabled selected>Seleccione una materia</option>
+                                            <?php if (!empty($ofertas_activas)): ?>
+                                                <?php foreach ($ofertas_activas as $oferta): ?>
+                                                    <option value="<?= htmlspecialchars($oferta['oferta_id']) ?>"
+                                                        data-precio="<?= htmlspecialchars($oferta['precio_hora']) ?>"
+                                                        data-nombre="<?= htmlspecialchars($oferta['nombre_materia']) ?>">
+                                                        <?= htmlspecialchars($oferta['nombre_materia']) ?>
+                                                        ($<?= number_format($oferta['precio_hora'], 2) ?>/h)
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            <?php else: ?>
+                                                <option value="" disabled>El tutor no tiene ofertas activas.</option>
+                                            <?php endif; ?>
+                                        </select>
+                                        <small class="form-text text-muted" id="info_precio_materia">
+                                            *Selecciona la materia para ver los precios y habilitar la reserva.
+                                        </small>
+                                    </div>
 
-                                                <?php if (!empty($ofertas_activas)): ?>
-                                                    <?php foreach ($ofertas_activas as $oferta): ?>
-                                                        <option value="<?= $oferta['oferta_id'] ?>">
-                                                            <?= htmlspecialchars($oferta['nombre_materia']) ?> (Precio:
-                                                            $<?= number_format($oferta['precio_hora'], 2) ?>/h)
-                                                        </option>
-                                                    <?php endforeach; ?>
-                                                <?php else: ?>
-                                                    <option value="" disabled>El tutor no tiene ofertas activas.</option>
-                                                <?php endif; ?>
+                                    <label class="form-label fw-bold mt-3">2. Selecciona un Bloque Horario:</label>
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-sm text-center align-middle">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Hora</th>
+                                                    <th>Lunes</th>
+                                                    <th>Martes</th>
+                                                    <th>Miércoles</th>
+                                                    <th>Jueves</th>
+                                                    <th>Viernes</th>
+                                                    <th>Sábado</th>
+                                                    <th>Domingo</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php
+                                                // Definimos los días de la semana y las horas que queremos mostrar
+                                                $dias_semana_num = [1 => 'LUNES', 2 => 'MARTES', 3 => 'MIÉRCOLES', 4 => 'JUEVES', 5 => 'VIERNES', 6 => 'SÁBADO', 7 => 'DOMINGO'];
+                                                $horas_del_dia = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'];
 
-                                            </select>
-                                            <small class="form-text text-muted">Selecciona la materia y verifica el
-                                                precio.</small>
-                                        </div>
+                                                foreach ($horas_del_dia as $hora_bloque): ?>
+                                                    <tr>
+                                                        <th class="table-light small"><?= $hora_bloque ?></th>
+                                                        <?php foreach ($dias_semana_num as $dia_num => $dia_nombre): ?>
+                                                            <td>
+                                                                <?php
+                                                                $es_disponible = false;
+                                                                $hora_fin_bloque = date('H:i', strtotime($hora_bloque . ' +1 hour'));
+                                                                $today = strftime('%A'); // Usaremos esto para filtrar horarios pasados en el día actual
+                                                        
+                                                                if (isset($horario_semanal[$dia_nombre])) {
+                                                                    foreach ($horario_semanal[$dia_nombre] as $slot) {
+                                                                        if ($hora_bloque >= $slot['inicio'] && $hora_fin_bloque <= $slot['fin']) {
+                                                                            $es_disponible = true;
+                                                                            break;
+                                                                        }
+                                                                    }
+                                                                }
 
-                                        <div class="mb-3">
-                                            <label for="fecha_agendar" class="form-label">Fecha Deseada</label>
-                                            <input type="date" class="form-control" id="fecha_agendar" name="fecha"
-                                                required>
-                                        </div>
-
-                                        <div class="mb-3">
-                                            <label for="hora_agendar" class="form-label">Hora Deseada (Basado en
-                                                Disponibilidad)</label>
-                                            <input type="time" class="form-control" id="hora_agendar" name="hora"
-                                                required>
-                                        </div>
-
-                                        <button type="submit" class="btn btn-warning btn-lg w-100 mt-2">
-                                            <i class="fas fa-check-circle me-1"></i> Solicitar Tutoría
-                                        </button>
-                                    </form>
+                                                                if ($es_disponible): ?>
+                                                                    <button class="btn btn-success btn-sm btn-reserva"
+                                                                        data-dia-num="<?= $dia_num ?>"
+                                                                        data-dia-nombre="<?= $dia_nombre ?>"
+                                                                        data-hora-inicio="<?= $hora_bloque ?>"
+                                                                        data-hora-fin="<?= $hora_fin_bloque ?>"
+                                                                        onclick="abrirModalReserva(this)" disabled>
+                                                                        <i class="fas fa-clock"></i>
+                                                                    </button>
+                                                                <?php else: ?>
+                                                                    <span class="text-muted small">―</span>
+                                                                <?php endif; ?>
+                                                            </td>
+                                                        <?php endforeach; ?>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -321,6 +402,224 @@ $ruta_imagen = !empty($tutor_detalle['perfil_imagen']) ?
             </main>
         </div>
     </div>
+    <div class="modal fade" id="modalReserva" tabindex="-1" aria-labelledby="modalReservaLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form id="form_solicitud" action="procesar_agendamiento.php" method="POST">
+                    <div class="modal-header bg-warning text-dark">
+                        <h5 class="modal-title" id="modalReservaLabel"><i class="fas fa-clipboard-check me-1"></i>
+                            Confirmar Solicitud</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-2">Confirma los detalles de tu tutoría:</p>
+                        <ul class="list-group list-group-flush mb-3">
+                            <li class="list-group-item">**Tutor:**
+                                <?= htmlspecialchars($tutor_detalle['nombre_tutor'] . ' ' . $tutor_detalle['apellido_tutor']) ?>
+                            </li>
+                            <li class="list-group-item">**Materia:** <strong id="modal_materia_nombre"></strong></li>
+                            <li class="list-group-item">**Día Solicitado:** <strong id="modal_dia_solicitado"></strong>
+                            </li>
+                            <li class="list-group-item">**Hora de Inicio:** <strong id="modal_hora_inicio"></strong>
+                            </li>
+                        </ul>
+
+                        <div class="mb-3 border p-3 rounded bg-light">
+                            <label for="duracion_horas_input" class="form-label fw-bold mb-1">Duración (horas):</label>
+                            <select class="form-select" id="duracion_horas_input" name="duracion_horas">
+                                <option value="1.0">1.0 Hora</option>
+                                <option value="1.5">1.5 Horas</option>
+                                <option value="2.0">2.0 Horas</option>
+                                <option value="2.5">2.5 Horas</option>
+                                <option value="3.0">3.0 Horas</option>
+                            </select>
+                            <small class="text-muted mt-2 d-block">La hora de fin se recalculará
+                                automáticamente.</small>
+                        </div>
+
+                        <ul class="list-group list-group-flush mb-3">
+                            <li class="list-group-item">**Hora de Fin Estimada:** <strong id="modal_hora_fin"></strong>
+                            </li>
+                            <li class="list-group-item">**Precio Total:** <strong id="modal_precio_final"
+                                    class="text-success"></strong></li>
+                        </ul>
+
+                        <p class="alert alert-info small mt-3">
+                            Tu solicitud se registrará como **PENDIENTE** y el tutor deberá aprobarla.
+                        </p>
+
+                        <input type="hidden" name="tutor_id" value="<?= $tutor_id ?>">
+                        <input type="hidden" name="oferta_id" id="input_oferta_id">
+                        <input type="hidden" name="precio_total_calculado" id="input_precio_total_calculado">
+
+                        <input type="hidden" name="fecha" id="input_fecha_solicitada">
+                        <input type="hidden" name="hora" id="input_hora_inicio">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-warning">Enviar Solicitud</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Mapeo para convertir el día de la semana (LUNES, MARTES...) a texto en español para el Modal
+        const dias_espanol = {
+            'LUNES': 'Lunes',
+            'MARTES': 'Martes',
+            'MIÉRCOLES': 'Miércoles',
+            'JUEVES': 'Jueves',
+            'VIERNES': 'Viernes',
+            'SÁBADO': 'Sábado',
+            'DOMINGO': 'Domingo'
+        };
+
+        // Variables globales para mantener el estado de la reserva seleccionada
+        let precio_hora_base = 0;
+        let hora_inicio_seleccionada = '';
+
+        // Función para calcular la fecha real de la próxima ocurrencia del día de la semana
+        function getNextDateForDay(dayName) {
+            const dias = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
+            const targetDayIndex = dias.indexOf(dayName);
+            if (targetDayIndex === -1) return null;
+
+            const today = new Date();
+            const todayIndex = today.getDay(); // 0 (Dom) a 6 (Sab)
+
+            let diff = targetDayIndex - todayIndex;
+            if (diff <= 0) {
+                diff += 7; // Si el día ya pasó esta semana, se va a la próxima semana
+            }
+
+            const nextDate = new Date(today);
+            nextDate.setDate(today.getDate() + diff);
+
+            // Formato YYYY-MM-DD
+            const year = nextDate.getFullYear();
+            const month = String(nextDate.getMonth() + 1).padStart(2, '0');
+            const day = String(nextDate.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // Función principal para actualizar el precio y la hora de fin en el modal
+        function actualizarDetallesReserva() {
+            const duracionSelect = document.getElementById('duracion_horas_input');
+            const duracion = parseFloat(duracionSelect.value);
+
+            // 1. Recálculo del Precio Total
+            const precioTotal = precio_hora_base * duracion;
+            document.getElementById('modal_precio_final').textContent = `$${precioTotal.toFixed(2)} USD`;
+            document.getElementById('input_precio_total_calculado').value = precioTotal.toFixed(2);
+
+            // 2. Recálculo de la Hora de Fin
+            if (hora_inicio_seleccionada) {
+                // Se calcula la hora de fin sumando la duración (en minutos) a la hora de inicio
+                const [horas, minutos] = hora_inicio_seleccionada.split(':').map(Number);
+                const duracionMinutos = duracion * 60;
+
+                const totalMinutos = (horas * 60) + minutos + duracionMinutos;
+
+                const finHoras = Math.floor(totalMinutos / 60) % 24; // El modulo 24 es por si pasa de medianoche
+                const finMinutos = totalMinutos % 60;
+
+                const horaFinFormateada =
+                    String(finHoras).padStart(2, '0') + ':' +
+                    String(finMinutos).padStart(2, '0');
+
+                document.getElementById('modal_hora_fin').textContent = horaFinFormateada;
+            }
+
+            // TODO Opcional: Implementar una validación aquí (o en el backend) para ver si 
+            // la hora de fin calculada sigue dentro de la disponibilidad del tutor. 
+        }
+
+        // -----------------------------------------------------
+
+        function abrirModalReserva(boton) {
+            const materiaSelect = document.getElementById('materia_seleccionada');
+
+            if (!materiaSelect.value) {
+                alert("¡ERROR! Primero debes seleccionar una materia para poder reservar.");
+                return;
+            }
+
+            // Resetear la duración a 1.0 al abrir el modal para un nuevo slot
+            document.getElementById('duracion_horas_input').value = '1.0';
+
+            // 1. Obtener datos del botón y el selector
+            const diaNombre = boton.getAttribute('data-dia-nombre');
+            const horaInicio = boton.getAttribute('data-hora-inicio');
+
+            const selectedOption = materiaSelect.options[materiaSelect.selectedIndex];
+            const ofertaID = selectedOption.value;
+
+            // Asignar precio base y hora de inicio a las variables globales
+            precio_hora_base = parseFloat(selectedOption.getAttribute('data-precio'));
+            hora_inicio_seleccionada = horaInicio;
+
+            const nombreMateria = selectedOption.getAttribute('data-nombre');
+
+            // 2. Calcular la FECHA REAL (la próxima ocurrencia de ese día)
+            const fechaReal = getNextDateForDay(diaNombre);
+
+            // 3. Rellenar el Modal con datos fijos del slot
+            document.getElementById('modal_materia_nombre').textContent = nombreMateria;
+            document.getElementById('modal_dia_solicitado').textContent = `${dias_espanol[diaNombre]} (${fechaReal})`;
+            document.getElementById('modal_hora_inicio').textContent = horaInicio;
+
+            // 4. Rellenar Campos Ocultos del Formulario (para el backend)
+            document.getElementById('input_oferta_id').value = ofertaID;
+            document.getElementById('input_fecha_solicitada').value = fechaReal;
+            document.getElementById('input_hora_inicio').value = horaInicio;
+
+            // 5. Llamar a la función de actualización inicial para rellenar precio y hora de fin
+            actualizarDetallesReserva();
+
+            // 6. Asignar el listener al selector de duración
+            document.getElementById('duracion_horas_input').onchange = actualizarDetallesReserva;
+
+            // Mostrar el modal
+            const reservaModal = new bootstrap.Modal(document.getElementById('modalReserva'));
+            reservaModal.show();
+        }
+
+        // ... mantener la función que se llama al cambiar la materia (addEventListener de materia_seleccionada) ...
+        document.getElementById('materia_seleccionada').addEventListener('change', function () {
+            const selectedOption = this.options[this.selectedIndex];
+            const precio = selectedOption.getAttribute('data-precio');
+            const infoDiv = document.getElementById('info_precio_materia');
+
+            if (precio) {
+                infoDiv.innerHTML = `*Precio base: **$${parseFloat(precio).toFixed(2)} USD** por hora. Ahora puedes seleccionar un horario.`;
+                infoDiv.classList.remove('text-muted');
+                infoDiv.classList.add('text-success');
+
+                // Habilitar todos los botones de reserva
+                document.querySelectorAll('.btn-reserva').forEach(btn => {
+                    btn.disabled = false;
+                });
+
+            } else {
+                infoDiv.innerHTML = `*Selecciona la materia para ver los precios y habilitar la reserva.`;
+                infoDiv.classList.add('text-muted');
+                infoDiv.classList.remove('text-success');
+
+                // Deshabilitar todos los botones de reserva
+                document.querySelectorAll('.btn-reserva').forEach(btn => {
+                    btn.disabled = true;
+                });
+            }
+        });
+
+        // Deshabilitar botones al cargar la página si no hay materia seleccionada
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.btn-reserva').forEach(btn => {
+                btn.disabled = true;
+            });
+        });
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"
         crossorigin="anonymous"></script>
     <script src="js/scripts.js"></script>
