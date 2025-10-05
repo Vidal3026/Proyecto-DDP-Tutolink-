@@ -1,12 +1,23 @@
 <?php
 include 'Includes/Nav.php';
 
+// 1. VERIFICACIÓN DE SESIÓN (Estudiante)
+if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'estudiante') {
+    header("Location: ../Login.php");
+    exit();
+}
+
+// Incluimos la conexión a la base de datos
+include "../Includes/db.php";
+$id_usuario = $_SESSION['id'];
+
 // 2. CONSULTA DE SOLICITUDES DE TUTORÍA
+// Se incluye la columna s.fecha_pago para la lógica del recibo
 $sql = "
     SELECT
-        s.id AS solicitud_id,  -- ¡AÑADIDO! Necesario para el botón de pago
-        s.fecha, s.hora_inicio, s.duracion, s.precio_total, s.estado,
-        m.nombre_materia AS materia, -- ¡CORREGIDO! Usando nombre_materia
+        s.id AS solicitud_id, 
+        s.fecha, s.hora_inicio, s.duracion, s.precio_total, s.estado, s.fecha_pago,
+        m.nombre_materia AS materia,
         t.nombre AS nombre_tutor, t.apellido AS apellido_tutor
     FROM solicitudes_tutorias s
     JOIN ofertas_tutorias o ON s.id_oferta = o.id
@@ -16,22 +27,29 @@ $sql = "
     ORDER BY s.fecha DESC, s.hora_inicio DESC;
 ";
 
-$stmt = $conn->prepare($sql);
-$stmt->bindParam(':estudiante_id', $id_usuario, PDO::PARAM_INT);
-$stmt->execute();
-$solicitudes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+try {
+    $stmt = $conn->prepare($sql);
+    $stmt->bindParam(':estudiante_id', $id_usuario, PDO::PARAM_INT);
+    $stmt->execute();
+    $solicitudes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    error_log("Error al cargar solicitudes: " . $e->getMessage());
+    $solicitudes = []; 
+    $error_db = "Error al cargar el listado de solicitudes.";
+}
+
 ?>
 
-<!DOCTYPE html>s
-<html lang="en">
+<!DOCTYPE html>
+<html lang="es">
 
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <meta name="description" content="" />
+    <meta name="description" content="Historial de solicitudes de tutoría enviadas por el estudiante" />
     <meta name="author" content="" />
-    <title>Solicitudess</title>
+    <title>Mis Solicitudes</title>
     <link href="css/styles.css" rel="stylesheet" />
     <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
 </head>
@@ -39,7 +57,6 @@ $solicitudes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <body class="sb-nav-fixed">
     <div id="layoutSidenav">
         <div id="layoutSidenav_nav">
-            <!-- Panel Izquierdo -->
             <?php include 'Includes/NavIzquierdo.php'; ?>
         </div>
         <div id="layoutSidenav_content">
@@ -47,10 +64,9 @@ $solicitudes = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <div class="container-fluid px-4">
                     <h1 class="mt-4">Solicitudes</h1>
                     <ol class="breadcrumb mb-4">
-                        <li class="breadcrumb-item"><a href="index.html">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="index.php">Dashboard</a></li>
                         <li class="breadcrumb-item active">Mis solicitudes</li>
                     </ol>
-                    <!--Contendo-->
                     <div class="card mb-4">
                         <div class="card-header">
                             <i class="fas fa-table me-1"></i>
@@ -68,6 +84,10 @@ $solicitudes = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                         aria-label="Close"></button>
                                 </div>
                             <?php endif; ?>
+                            
+                            <?php if (isset($error_db)): ?>
+                                <div class="alert alert-danger"><?= $error_db ?></div>
+                            <?php endif; ?>
 
                             <?php if (count($solicitudes) > 0): ?>
                                 <div class="table-responsive">
@@ -81,6 +101,7 @@ $solicitudes = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                                 <th>Duración</th>
                                                 <th>Precio Total</th>
                                                 <th>Estado</th>
+                                                <th>Comprobante</th> 
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -97,8 +118,8 @@ $solicitudes = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                                     <td>
                                                         <?php
                                                         $estado = htmlspecialchars($solicitud['estado']);
-                                                        $clase_estado = 'badge bg-secondary'; // Valor por defecto
-                                                
+                                                        $clase_estado = 'badge bg-secondary'; 
+                                                        
                                                         switch ($estado) {
                                                             case 'PENDIENTE':
                                                                 $clase_estado = 'badge bg-warning text-dark';
@@ -135,7 +156,20 @@ $solicitudes = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                                             <div class="small text-danger mt-1">Rechazada por el tutor.</div>
                                                         <?php endif; ?>
                                                     </td>
-                                                </tr>
+                                                    
+                                                    <td>
+                                                        <?php if ($estado === 'CONFIRMADA' || $estado === 'COMPLETADA'): ?>
+                                                            <a href="generar_recibo.php?id=<?= $solicitud['solicitud_id'] ?>" 
+                                                               class="btn btn-sm btn-outline-success" 
+                                                               target="_blank" 
+                                                               title="Ver Recibo de Pago">
+                                                                <i class="fas fa-receipt"></i> Recibo
+                                                            </a>
+                                                        <?php else: ?>
+                                                            <span class="text-muted small">N/A</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    </tr>
                                             <?php endforeach; ?>
                                         </tbody>
                                     </table>
@@ -168,7 +202,6 @@ $solicitudes = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"
         crossorigin="anonymous"></script>
     <script src="js/scripts.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.js" crossorigin="anonymous"></script>
 </body>
 
 </html>

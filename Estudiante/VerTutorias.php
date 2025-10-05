@@ -1,8 +1,7 @@
 <?php
+// 1. VERIFICACIÓN DE SESIÓN (Estudiante) y Navegación
 include 'Includes/Nav.php';
 
-
-// 1. VERIFICACIÓN DE SESIÓN (Estudiante)
 if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'estudiante') {
     header("Location: ../Login.php");
     exit();
@@ -13,7 +12,6 @@ include "../Includes/db.php";
 $id_usuario = $_SESSION['id'];
 
 // 2. CONSULTA DE TUTORÍAS CONFIRMADAS Y COMPLETADAS
-// Filtramos por el nuevo estado 'CONFIRMADA' y el estado final 'COMPLETADA'
 $sql = "
     SELECT
         s.id AS solicitud_id, 
@@ -37,16 +35,16 @@ try {
     $tutorias = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     error_log("Error al cargar tutorías confirmadas: " . $e->getMessage());
-    $tutorias = []; 
+    $tutorias = [];
     $error_db = "Error al cargar el historial de tutorías.";
 }
 
-// Incluimos el encabezado y la navegación
-include 'Includes/Nav.php'; 
+// Nota: 'Includes/Nav.php' ya fue incluido arriba, no es necesario incluirlo de nuevo.
 ?>
 
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -77,6 +75,7 @@ include 'Includes/Nav.php';
                             <i class="fas fa-calendar-check me-1"></i>
                             Clases Pagadas y Agendadas
                         </div>
+
                         <div class="card-body">
 
                             <?php if (isset($error_db)): ?>
@@ -85,7 +84,7 @@ include 'Includes/Nav.php';
 
                             <?php if (count($tutorias) > 0): ?>
 
-                                <div class="row row-cols-1 row-cols-md-2 g-4">
+                                <div class="row row-cols-1 g-4">
 
                                     <?php foreach ($tutorias as $tutoria):
                                         $estado = htmlspecialchars($tutoria['estado']);
@@ -93,70 +92,83 @@ include 'Includes/Nav.php';
                                         // --- LÓGICA VISUAL BASADA EN EL ESTADO ---
                                         if ($estado === 'COMPLETADA') {
                                             // Clase finalizada (Historial) -> Color Verde
-                                            $clase_card = 'border-start-success'; 
-                                            $clase_estado = 'badge bg-success';
+                                            $clase_card = 'border-start-success';
+                                            $clase_estado = 'bg-success';
                                             $label_estado = 'FINALIZADA';
                                         } elseif ($estado === 'CONFIRMADA') {
                                             // Clase pagada y pendiente (Próximas Clases) -> Color Azul
-                                            $clase_card = 'border-start-primary'; 
-                                            $clase_estado = 'badge bg-primary';
+                                            $clase_card = 'border-start-primary';
+                                            $clase_estado = 'bg-primary';
                                             $label_estado = 'CONFIRMADA';
                                         } else {
                                             // Fallback
                                             $clase_card = 'border-start-secondary';
-                                            $clase_estado = 'badge bg-secondary';
+                                            $clase_estado = 'bg-secondary';
                                             $label_estado = $estado;
                                         }
-                                    ?>
+                                        ?>
 
-                                    <div class="col">
-                                        <div class="card shadow h-100 <?= $clase_card ?> border-start-5">
-                                            <div class="card-body">
-                                                <div class="row align-items-start">
+                                        <div class="col-12 col-lg-4">
+                                            <div class="card shadow h-100 <?= $clase_card ?> border-start-5">
 
-                                                    <div class="col-8">
-                                                        <div class="small text-muted mb-1">Tutoría con:</div>
-                                                        <h5 class="text-uppercase mb-1 text-primary">
-                                                            <?= htmlspecialchars($tutoria['materia']) ?>
-                                                        </h5>
-                                                        <p class="text-dark mb-3">
-                                                            <i class="fas fa-user-circle me-1"></i>
-                                                            **<?= htmlspecialchars($tutoria['nombre_tutor'] . ' ' . $tutoria['apellido_tutor']) ?>**
-                                                        </p>
-
-                                                        <div class="small text-muted">Precio Pagado:</div>
-                                                        <h5 class="text-success mb-0">
-                                                            $<?= number_format($tutoria['precio_total'], 2) ?>
-                                                        </h5>
+                                                <div
+                                                    class="card-header d-flex justify-content-between align-items-center p-3 text-white <?= $clase_estado ?>">
+                                                    <div class="h5 mb-0">
+                                                        <i class="far fa-calendar-alt me-2"></i>
+                                                        <?= date('d/M/Y', strtotime($tutoria['fecha'])) ?>
                                                     </div>
-
-                                                    <div class="col-4 text-end">
-
-                                                        <div class="small text-muted">Clase:</div>
-                                                        <h5 class="text-dark mb-1">
-                                                            <?= date('d/M/Y', strtotime($tutoria['fecha'])) ?>
-                                                        </h5>
-                                                        <p class="text-dark mb-3">
-                                                            <?= date('H:i', strtotime($tutoria['hora_inicio'])) ?>
-                                                            (<?= htmlspecialchars($tutoria['duracion']) ?> hrs.)
-                                                        </p>
-
-                                                        <span class="<?= $clase_estado ?>"><?= $label_estado ?></span>
+                                                    <div class="h5 mb-0">
+                                                        <i class="far fa-clock me-1"></i>
+                                                        <?= date('H:i', strtotime($tutoria['hora_inicio'])) ?>
                                                     </div>
                                                 </div>
-                                            </div>
 
-                                            <div class="card-footer bg-light p-2 d-flex justify-content-between">
-                                                <small class="text-muted">
-                                                    <i class="fas fa-credit-card me-1"></i> ID Solicitud: #<?= htmlspecialchars($tutoria['solicitud_id']) ?>
-                                                </small>
-                                                <small class="text-muted">
-                                                    <i class="fas fa-check-circle me-1"></i> Pagado el:
-                                                    <?= date('d/M/Y', strtotime($tutoria['fecha_pago'])) ?>
-                                                </small>
+                                                <div class="card-body">
+                                                    <div class="row row-cols-1 row-cols-md-2">
+
+                                                        <div class="col-12 col-md-9">
+                                                            <p class="text-muted small mb-1">Tutoría de:</p>
+                                                            <h4 class="text-uppercase mb-1 text-dark">
+                                                                <?= htmlspecialchars($tutoria['materia']) ?>
+                                                            </h4>
+                                                            <p class="mb-3">
+                                                                <i class="fas fa-chalkboard-teacher me-1 text-muted"></i>
+                                                                Tutor:
+                                                                <?= htmlspecialchars($tutoria['nombre_tutor'] . ' ' . $tutoria['apellido_tutor']) ?>
+                                                            </p>
+
+                                                            <div class="mt-3">
+                                                                <div class="small text-muted">Precio Pagado:</div>
+                                                                <h5 class="text-success mb-0">
+                                                                    $<?= number_format($tutoria['precio_total'], 2) ?></h5>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-12 col-md-3 text-md-end pt-3 pt-md-0">
+
+                                                            <div class="small text-muted">Duración:</div>
+                                                            <h6 class="text-dark mb-3">
+                                                                <?= htmlspecialchars($tutoria['duracion']) ?> hrs.
+                                                            </h6>
+                                                            <div class="small text-muted mt-2">ID:</div>
+                                                            <h6 class="text-dark">
+                                                                #<?= htmlspecialchars($tutoria['solicitud_id']) ?></h6>
+
+                                                            <div class="small text-muted">Estado:</div>
+                                                            <div class="mt-4">
+                                                                <span class="badge rounded-pill <?= $clase_estado ?> p-2"><?= $label_estado ?></span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="card-footer bg-light p-2 text-end">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-receipt me-1"></i> Pagado el:
+                                                        <?= date('d/M/Y H:i', strtotime($tutoria['fecha_pago'])) ?>
+                                                    </small>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
 
                                     <?php endforeach; ?>
                                 </div>
