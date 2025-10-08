@@ -161,7 +161,7 @@ $proximas_tutorias = array_map(function ($t) {
                                 </div>
 
                                 <div class="col-md-4 col-sm-12 mb-4">
-                                    <div class="card bg-secondary text-white h-100">
+                                    <div class="card bg-success text-white h-100">
                                         <div class="card-body">
                                             <div class="d-flex justify-content-between align-items-center">
                                                 <div>

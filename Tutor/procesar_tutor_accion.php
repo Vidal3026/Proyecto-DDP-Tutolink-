@@ -57,7 +57,7 @@ try {
     // 4. Redirección de Éxito
     // El 'ACEPTADA' ahora requiere que el estudiante pague. 
     // El 'CANCELADA' notifica al estudiante.
-    header('Location: MisSolicitudes.php?success=accion_exitosa&estado=' . $nuevo_estado);
+    header('Location: Solicitudes.php?success=accion_exitosa&estado=' . $nuevo_estado);
     exit;
 
 } catch (PDOException $e) {
