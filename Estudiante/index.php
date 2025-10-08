@@ -101,8 +101,6 @@ $proximas_tutorias = array_map(function ($t) {
 </head>
 
 <body class="sb-nav-fixed">
-
-
     <div id="layoutSidenav">
         <div id="layoutSidenav_nav">
             <?php include 'Includes/NavIzquierdo.php'; ?>
@@ -173,7 +171,7 @@ $proximas_tutorias = array_map(function ($t) {
                                             </div>
                                         </div>
                                         <div class="card-footer d-flex align-items-center justify-content-between">
-                                            <a class="small text-white stretched-link" href="HistorialTutorias.php">Ver
+                                            <a class="small text-white stretched-link" href="Historial.php">Ver
                                                 historial</a>
                                             <div class="small text-white"><i class="fas fa-angle-right"></i></div>
                                         </div>

@@ -23,12 +23,9 @@
                 <div class="sb-nav-link-icon"><i class="fa-solid fa-inbox"></i></div>
                 Solicitudes Recibidas
             </a>
-            <a class="nav-link" href="Estadistica.php">
-                <div class="sb-nav-link-icon"><i class="fa-solid fa-chart-column"></i></div>
-                Estadística
-            </a>
+
             <a class="nav-link" href="Historial.php">
-                <div class="sb-nav-link-icon"><i class="fa-solid fa-file-lines"></i></i></div>
+                <div class="sb-nav-link-icon"><i class="fa-solid fa-file-lines"></i></div>
                 Historial
             </a>
 

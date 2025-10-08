@@ -11,7 +11,7 @@ $id_tutor = $_SESSION['id'];
 
 include "../Includes/db.php"; // Incluye tu conexión a la BD
 
-// 2. CONSULTA DE TUTORÍAS DEL HISTORIAL
+// 2. CONSULTA DE TUTORÍAS DEL HISTORIAL (¡CONSULTA ORIGINAL RESTAURADA!)
 $sql_historial = "
     SELECT 
         s.id AS solicitud_id,
@@ -41,7 +41,8 @@ try {
     $stmt->execute();
     $historial = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
-    error_log("Error al consultar historial de tutorías: " . $e->getMessage());
+    // Para depuración, puedes quitar el error_log si no tienes acceso
+    error_log("Error al consultar historial de tutorías: " . $e->getMessage()); 
     $historial = [];
     $error_db = "Error al cargar datos de la base de datos.";
 }
@@ -57,6 +58,7 @@ try {
     <title>Historial de Tutorías - Tutor</title>
     <link href="css/styles.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/style.min.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script> 
     <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
 </head>
 
@@ -92,13 +94,23 @@ try {
                                                 <th>Materia</th>
                                                 <th>Estudiante</th>
                                                 <th>Fecha</th>
-                                                <th>Duración</th>
+                                                <th>Horario</th>
                                                 <th>Estado Final</th>
                                                 <th>Acción</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <?php foreach ($historial as $h): ?>
+                                            <?php foreach ($historial as $h): 
+                                            // Preparar los datos básicos en atributos 'data-'
+                                            $data_attributes = "
+                                                data-id='" . htmlspecialchars($h['solicitud_id']) . "'
+                                                data-materia='" . htmlspecialchars($h['materia']) . "' 
+                                                data-estudiante='" . htmlspecialchars($h['estudiante']) . "' 
+                                                data-fecha='" . date('d/m/Y', strtotime($h['fecha'])) . "' 
+                                                data-horario='" . date('h:i A', strtotime($h['hora_inicio'])) . ' - ' . date('h:i A', strtotime($h['hora_fin'])) . "' 
+                                                data-estado='" . htmlspecialchars($h['estado']) . "'
+                                            ";
+                                            ?>
                                                 <tr>
                                                     <td><?= htmlspecialchars($h['materia']) ?></td>
                                                     <td><?= htmlspecialchars($h['estudiante']) ?></td>
@@ -119,10 +131,14 @@ try {
                                                         </span>
                                                     </td>
                                                     <td>
-                                                        <a href="ver_detalle_historial.php?id=<?= $h['solicitud_id'] ?>"
-                                                            class="btn btn-sm btn-info" title="Ver Detalles">
+                                                        <button type="button" 
+                                                            class="btn btn-sm btn-info btn-ver-detalle" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#detalleHistorialModal" 
+                                                            <?= $data_attributes ?>
+                                                            title="Ver Detalles de la Solicitud">
                                                             <i class="fas fa-info-circle"></i> Ver
-                                                        </a>
+                                                        </button>
                                                     </td>
                                                 </tr>
                                             <?php endforeach; ?>
@@ -143,12 +159,72 @@ try {
         </div>
     </div>
 
+    <div class="modal fade" id="detalleHistorialModal" tabindex="-1" aria-labelledby="detalleHistorialModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="detalleHistorialModalLabel">Información de la Tutoría Histórica</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>ID Solicitud:</strong> <span id="modalID"></span></p>
+                    <div class="row mb-3">
+                        <div class="col-md-6"><strong>Materia:</strong> <span id="modalMateria"></span></div>
+                        <div class="col-md-6"><strong>Estudiante:</strong> <span id="modalEstudiante"></span></div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6"><strong>Fecha:</strong> <span id="modalFecha"></span></div>
+                        <div class="col-md-6"><strong>Horario:</strong> <span id="modalHorario"></span></div>
+                    </div>
+                    
+                    <p><strong>Estado Final:</strong> <span id="modalEstadoBadge" class="badge"></span></p>
+                    
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"
         crossorigin="anonymous"></script>
     <script src="js/scripts.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/umd/simple-datatables.min.js"
         crossorigin="anonymous"></script>
     <script src="js/datatables-simple-demo.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            // Cuando se hace clic en el botón "Ver"
+            $('.btn-ver-detalle').on('click', function() {
+                var $btn = $(this);
+                
+                // Obtener datos de los atributos 'data-'
+                var id = $btn.data('id');
+                var materia = $btn.data('materia');
+                var estudiante = $btn.data('estudiante');
+                var fecha = $btn.data('fecha');
+                var horario = $btn.data('horario');
+                var estado = $btn.data('estado');
+
+                // Llenar el contenido del Modal
+                $('#modalID').text(id);
+                $('#modalEstudiante').text(estudiante);
+                $('#modalMateria').text(materia);
+                $('#modalFecha').text(fecha);
+                $('#modalHorario').text(horario);
+
+                // Manejar el badge de Estado
+                var badgeClass = 'bg-secondary';
+                if (estado === 'COMPLETADA') {
+                    badgeClass = 'bg-success';
+                } else if (estado === 'RECHAZADA' || estado === 'CANCELADA') {
+                    badgeClass = 'bg-danger';
+                }
+                $('#modalEstadoBadge').text(estado).removeClass().addClass('badge ' + badgeClass);
+            });
+        });
+    </script>
 </body>
 
 </html>

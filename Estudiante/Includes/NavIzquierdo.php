@@ -39,7 +39,8 @@
                 Mis solicitudes
                 <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
             </a>
-            <div class="collapse" id="collapsePagesSolis" aria-labelledby="headingTwo" data-bs-parent="#sidenavAccordion">
+            <div class="collapse" id="collapsePagesSolis" aria-labelledby="headingTwo"
+                data-bs-parent="#sidenavAccordion">
                 <nav class="sb-sidenav-menu-nested nav accordion" id="sidenavAccordionPages">
                     <!-- Tutores Disponibles -->
                     <a class="nav-link" href="MisSolicitudes.php">
@@ -47,22 +48,10 @@
                     </a>
                 </nav>
             </div>
-
-             <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapsePagess"
-                aria-expanded="false" aria-controls="collapsePagess">
-                <div class="sb-nav-link-icon"><i class="fas fa-star"></i></div>
-                Rendimiento
-                <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+            <a class="nav-link" href="Historial.php">
+                <div class="sb-nav-link-icon"><i class="fa-solid fa-file-lines"></i></div>
+                Historial
             </a>
-            <div class="collapse" id="collapsePagess" aria-labelledby="headingTwo" data-bs-parent="#sidenavAccordion">
-                <nav class="sb-sidenav-menu-nested nav accordion" id="sidenavAccordionPages">
-                    <!-- Tutores Disponibles -->
-                    <a class="nav-link" href="BuscarTutor.php">
-                        Mis calificaciones
-                    </a>
-                </nav>
-            </div>
-
 
             <div class="sb-sidenav-menu-heading">Herramientas</div>
             <a class="nav-link" href="Calendario.php">
