@@ -34,7 +34,7 @@ try {
     $solicitudes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     error_log("Error al cargar solicitudes: " . $e->getMessage());
-    $solicitudes = []; 
+    $solicitudes = [];
     $error_db = "Error al cargar el listado de solicitudes.";
 }
 
@@ -67,6 +67,65 @@ try {
                         <li class="breadcrumb-item"><a href="index.php">Dashboard</a></li>
                         <li class="breadcrumb-item active">Mis solicitudes</li>
                     </ol>
+
+                    <?php
+                    // Asegúrate de que esta parte esté después de session_start() y antes de cualquier HTML
+                    
+                    $alert_message = '';
+                    $alert_type = '';
+
+                    // 1. Manejo de Errores Generales y Saldo Insuficiente
+                    if (isset($_GET['error'])) {
+                        $error_code = $_GET['error'];
+                        $message = isset($_GET['msg']) ? urldecode($_GET['msg']) : '';
+
+                        switch ($error_code) {
+                            case 'pago_fallido':
+                                $alert_type = 'danger';
+                                // 🛑 Usa el mensaje específico de la función Wallet
+                                $alert_message = "❌ **Transacción Fallida:** {$message}. Por favor, recarga tu billetera e inténtalo de nuevo.";
+                                break;
+                            case 'no_solicitud_id':
+                                $alert_type = 'warning';
+                                $alert_message = "No se pudo identificar la solicitud de tutoría.";
+                                break;
+                            case 'estado_invalido':
+                                $alert_type = 'warning';
+                                $alert_message = "Esta solicitud no está en estado ACEPTADA o ya fue pagada.";
+                                break;
+                            default:
+                                $alert_type = 'danger';
+                                $alert_message = "Ocurrió un error inesperado al procesar el pago.";
+                                break;
+                        }
+                    }
+                    // 2. Manejo de Mensajes de Éxito
+                    elseif (isset($_GET['success'])) {
+                        $success_code = $_GET['success'];
+
+                        switch ($success_code) {
+                            case 'pago_confirmado':
+                                $alert_type = 'success';
+                                $alert_message = "✅ **¡Pago Confirmado!** Tu solicitud ha sido marcada como CONFIRMADA. ¡Prepara tu clase!";
+                                break;
+                            case 'pago_ya_confirmado':
+                                $alert_type = 'info';
+                                $alert_message = "Esta solicitud ya había sido confirmada y pagada previamente.";
+                                break;
+                        }
+                    }
+                    ?>
+
+                    <?php if (!empty($alert_message)): ?>
+                        <div class="container mt-4">
+                            <div class="alert alert-<?php echo $alert_type; ?> alert-dismissible fade show" role="alert">
+                                <?php echo $alert_message; ?>
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                        </div>
+                    <?php endif; ?>
                     <div class="card mb-4">
                         <div class="card-header">
                             <i class="fas fa-table me-1"></i>
@@ -84,7 +143,7 @@ try {
                                         aria-label="Close"></button>
                                 </div>
                             <?php endif; ?>
-                            
+
                             <?php if (isset($error_db)): ?>
                                 <div class="alert alert-danger"><?= $error_db ?></div>
                             <?php endif; ?>
@@ -101,7 +160,7 @@ try {
                                                 <th>Duración</th>
                                                 <th>Precio Total</th>
                                                 <th>Estado</th>
-                                                <th>Comprobante</th> 
+                                                <th>Comprobante</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -118,8 +177,8 @@ try {
                                                     <td>
                                                         <?php
                                                         $estado = htmlspecialchars($solicitud['estado']);
-                                                        $clase_estado = 'badge bg-secondary'; 
-                                                        
+                                                        $clase_estado = 'badge bg-secondary';
+
                                                         switch ($estado) {
                                                             case 'PENDIENTE':
                                                                 $clase_estado = 'badge bg-warning text-dark';
@@ -156,20 +215,19 @@ try {
                                                             <div class="small text-danger mt-1">Rechazada por el tutor.</div>
                                                         <?php endif; ?>
                                                     </td>
-                                                    
+
                                                     <td>
                                                         <?php if ($estado === 'CONFIRMADA' || $estado === 'COMPLETADA'): ?>
-                                                            <a href="generar_recibo.php?id=<?= $solicitud['solicitud_id'] ?>" 
-                                                               class="btn btn-sm btn-outline-success" 
-                                                               target="_blank" 
-                                                               title="Ver Recibo de Pago">
+                                                            <a href="generar_recibo.php?id=<?= $solicitud['solicitud_id'] ?>"
+                                                                class="btn btn-sm btn-outline-success" target="_blank"
+                                                                title="Ver Recibo de Pago">
                                                                 <i class="fas fa-receipt"></i> Recibo
                                                             </a>
                                                         <?php else: ?>
                                                             <span class="text-muted small">N/A</span>
                                                         <?php endif; ?>
                                                     </td>
-                                                    </tr>
+                                                </tr>
                                             <?php endforeach; ?>
                                         </tbody>
                                     </table>

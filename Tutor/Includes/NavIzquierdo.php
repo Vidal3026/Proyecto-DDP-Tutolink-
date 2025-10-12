@@ -30,6 +30,10 @@
             </a>
 
             <div class="sb-sidenav-menu-heading">Herramientas</div>
+            <a class="nav-link" href="Billetera.php">
+                <div class="sb-nav-link-icon"><i class="fa-solid fa-wallet"></i></div>
+                Billetera
+            </a>
             <a class="nav-link" href="Calendario.php">
                 <div class="sb-nav-link-icon"><i class="fa-solid fa-calendar"></i></div>
                 Calendario

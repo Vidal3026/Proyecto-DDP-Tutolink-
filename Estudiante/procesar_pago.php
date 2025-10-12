@@ -15,6 +15,7 @@ if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'estudiante') {
 // 2. INCLUSIÓN DE LA CONEXIÓN (Punto Crítico)
 // VERIFICA QUE ESTA RUTA SEA CORRECTA
 include "../Includes/db.php"; 
+include "../Includes/Wallet.php";
 $estudiante_id = $_SESSION['id'];
 
 // 3. VALIDAR ID DE LA SOLICITUD
@@ -34,61 +35,95 @@ if (!isset($conn) || $conn === null) {
 
 
 try {
-    // Verificar que la solicitud exista y sea del estudiante
-    $sql = "SELECT id, id_estudiante, estado 
-            FROM solicitudes_tutorias 
-            WHERE id = :solicitud_id";
+    // 🛑 4. OBTENER DATOS CRÍTICOS: id_tutor y precio_total
+    $sql = "SELECT s.id, s.id_estudiante, s.id_tutor, s.estado, s.precio_total
+            FROM solicitudes_tutorias s
+            WHERE s.id = :solicitud_id";
     $stmt = $conn->prepare($sql);
     $stmt->bindParam(':solicitud_id', $solicitud_id, PDO::PARAM_INT);
     $stmt->execute();
     $solicitud = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    // a) Verificar que la solicitud exista y pertenezca al estudiante
+    // a) Verificar existencia y pertenencia
     if (!$solicitud || (int)$solicitud['id_estudiante'] !== (int)$estudiante_id) {
         header('Location: MisSolicitudes.php?error=acceso_denegado');
         exit();
     }
+    
+    // Guardar variables necesarias
+    $id_tutor = (int)$solicitud['id_tutor'];
+    $monto_total = (float)$solicitud['precio_total'];
 
-    // b) Verificar que solo se pague si el estado es 'ACEPTADA'
+    // b) Verificar estado (Solo se puede pagar si es 'ACEPTADA')
     if ($solicitud['estado'] !== 'ACEPTADA') {
-        // Redirige al estado inválido si no es ACEPTADA
+        // Si ya está CONFIRMADA, no se hace nada, pero se redirige a éxito.
+        if ($solicitud['estado'] === 'CONFIRMADA') {
+             header('Location: MisSolicitudes.php?success=pago_ya_confirmado');
+             exit();
+        }
         header('Location: MisSolicitudes.php?error=estado_invalido');
         exit();
     }
+    
+    // c) Verificar monto
+    if ($monto_total <= 0) {
+         header('Location: MisSolicitudes.php?error=monto_invalido');
+         exit();
+    }
+
 
     // =========================================================================
-    // 6. LÓGICA DE PROCESAMIENTO DE PAGO (ACTUALIZACIÓN FORZADA)
+    // 6. LÓGICA DE PROCESAMIENTO DE DINERO (CRÍTICO)
     // =========================================================================
     
-    // NOTA: Reemplazamos :nuevo_estado con el valor fijo 'CONFIRMADA' para evitar problemas de codificación/bind.
-    $sql_update = "
-        UPDATE solicitudes_tutorias 
-        SET estado = 'CONFIRMADA', fecha_pago = NOW() 
-        WHERE id = :solicitud_id
-    ";
+    // 🛑 EJECUTAR LA TRANSACCIÓN COMPLETA (Estudiante -> Tutor/Plataforma)
+    $resultado_transaccion = procesar_transaccion_tutoria(
+        $conn, 
+        $estudiante_id, 
+        $id_tutor, 
+        $monto_total, 
+        $solicitud_id
+    );
+
     
-    $stmt_update = $conn->prepare($sql_update);
-    // Ya no hacemos bindParam para :nuevo_estado, solo para :solicitud_id
-    $stmt_update->bindParam(':solicitud_id', $solicitud_id, PDO::PARAM_INT);
-    
-    $stmt_update->execute();
-    
-    // 7. VERIFICACIÓN CRÍTICA: Contar las filas afectadas
-    if ($stmt_update->rowCount() > 0) {
-        // Redirección de Éxito
-        header('Location: MisSolicitudes.php?success=pago_confirmado');
-        exit();
+    if ($resultado_transaccion['success']) {
+        
+        // =====================================================================
+        // 7. ACTUALIZAR ESTADO DE LA SOLICITUD (Solo si la transacción de dinero fue OK)
+        // =====================================================================
+        $sql_update = "
+             UPDATE solicitudes_tutorias 
+             SET estado = 'CONFIRMADA', fecha_pago = NOW() 
+             WHERE id = :solicitud_id AND estado = 'ACEPTADA'
+        ";
+        
+        $stmt_update = $conn->prepare($sql_update);
+        $stmt_update->bindParam(':solicitud_id', $solicitud_id, PDO::PARAM_INT);
+        $stmt_update->execute();
+        
+        if ($stmt_update->rowCount() > 0) {
+            // Éxito total
+            header('Location: MisSolicitudes.php?success=pago_confirmado');
+            exit();
+        } else {
+             // Esto solo ocurriría si el estado se cambió *entre* la verificación y el UPDATE
+             error_log("ADVERTENCIA: Transacción de dinero OK, pero falló el UPDATE de estado: Solicitud ID {$solicitud_id}.");
+             header('Location: MisSolicitudes.php?error=pago_fallido_db_estado');
+             exit();
+        }
+
     } else {
-        // Si rowCount es 0, la ID ya no existía o el estado fue cambiado por otro proceso
-        error_log("FALLO DE UPDATE: Solicitud ID {$solicitud_id}. Estado previo: {$solicitud['estado']}. La consulta afectó 0 filas.");
-        header('Location: MisSolicitudes.php?error=no_se_actualizo');
+        // Fallo en la lógica de la billetera (Saldo insuficiente o error de BD dentro de la función)
+        error_log("FALLO DE TRANSACCIÓN: Solicitud ID {$solicitud_id}. Mensaje: " . $resultado_transaccion['message']);
+        header('Location: MisSolicitudes.php?error=pago_fallido&msg=' . urlencode($resultado_transaccion['message']));
         exit();
     }
 
 } catch (PDOException $e) {
-    // 8. MANEJO DE ERRORES DE BASE DE DATOS
+    // 8. MANEJO DE ERRORES DE BASE DE DATOS (fuera de la transacción de billetera)
     error_log("Error al procesar pago (PDO Exception): " . $e->getMessage());
     header('Location: MisSolicitudes.php?error=pago_fallido_db');
     exit();
 }
+// Código PHP finaliza aquí
 ?>

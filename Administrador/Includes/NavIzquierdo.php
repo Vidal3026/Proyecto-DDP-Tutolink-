@@ -35,6 +35,10 @@
                     <a class="nav-link" href="Incidencias.php">Incidencias</a>
                 </nav>
             </div>
+            <a class="nav-link" href="SolicitudesAdministrador.php">
+                <div class="sb-nav-link-icon"><i class="fa-solid fa-inbox"></i></div>
+                Solicitudes Recibidas
+            </a>
 
             <!--Estadística-->
             <div class="sb-sidenav-menu-heading">Estadísticas</div>
@@ -53,22 +57,7 @@
                 </nav>
             </div>
 
-            <!--Configuración-->
-            <div class="sb-sidenav-menu-heading">Configuración</div>
-            <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseConfiguracion"
-                aria-expanded="false" aria-controls="collapseConfiguracion">
-                <div class="sb-nav-link-icon"><i class="fas fa-cog"></i></div>
-                Ajustes del Sistema
-                <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
-            </a>
-            <div class="collapse" id="collapseConfiguracion" aria-labelledby="headingOne"
-                data-bs-parent="#sidenavAccordion">
-                <nav class="sb-sidenav-menu-nested nav">
-                    <a class="nav-link" href="Notificaciones.php">Notificaciones</a>
-                    <a class="nav-link" href="RolesPermisos.php">Roles y Permisos</a>
-                </nav>
-            </div>
-
+            
             <!--Herramientas-->
             <div class="sb-sidenav-menu-heading">Herramientas</div>
             <a class="nav-link" href="Calendario.php">

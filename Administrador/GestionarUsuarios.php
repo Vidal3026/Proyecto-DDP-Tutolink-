@@ -149,7 +149,7 @@ try {
                                             <select class="form-select" id="edit-rol" name="rol" required>
                                                 <option value="estudiante">Estudiante</option>
                                                 <option value="tutor">Tutor</option>
-                                                <option value="administrador">Administrador</option>
+                                                <option value="admin">Administrador</option>
                                             </select>
                                         </div>
                                         <div class="mb-3">

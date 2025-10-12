@@ -242,6 +242,8 @@ unset($_SESSION['tipo_mensaje']);
                                                                   $clase_estado = 'primary';
                                                              } elseif ($estado === 'PENDIENTE') {
                                                                   $clase_estado = 'warning';
+                                                             }elseif ($estado === 'ACEPTADA') {
+                                                                  $clase_estado = '" style="background-color:#808080;color:white;';
                                                              }
                                                         ?>
                                                         <span class="badge badge-<?php echo $clase_estado; ?>">
