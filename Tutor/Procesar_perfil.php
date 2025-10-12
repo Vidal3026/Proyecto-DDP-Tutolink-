@@ -97,74 +97,74 @@ if ($seccion === 'perfil') {
     }
 }
 // ======================================================================
-// 5. **PROCESAR SECCIÓN DE MATERIAS Y MODALIDAD (CORREGIDO CON oferta_tutorias)**
+// 5. **PROCESAR SECCIÓN DE MATERIAS Y MODALIDAD (SOLUCIÓN DEFINITIVA Y UNIFICADA)**
 // ======================================================================
 elseif ($seccion === 'materias') {
     $modalidad_tutor = $_POST['modalidad_tutor'] ?? null;
-    $materias_impartidas = $_POST['materias_impartidas'] ?? []; // Array de Materias con IDs y Precios
+    $materias_impartidas = $_POST['materias_impartidas'] ?? []; 
+    $materias_insertadas = 0;
 
     if (empty($modalidad_tutor)) {
-        header('Location: configurar_perfil.php?error=modalidad_vacia&anchor=materias');
-        exit;
+        redirigir('error', 'modalidad_vacia');
     }
 
     try {
         $conn->beginTransaction();
 
-        // 2.3. Actualizar el campo 'modalidad_tutor' en la tabla 'usuarios'
+        // 1. Actualizar la modalidad del tutor
         $sql_update_modalidad = "UPDATE usuarios SET modalidad_tutor = :modalidad WHERE id = :tutor_id";
         $stmt_modalidad = $conn->prepare($sql_update_modalidad);
         $stmt_modalidad->bindParam(':modalidad', $modalidad_tutor, PDO::PARAM_STR);
         $stmt_modalidad->bindParam(':tutor_id', $tutor_id, PDO::PARAM_INT);
         $stmt_modalidad->execute();
 
-        // 2.4. Sincronizar las materias y sus precios (Tabla 'oferta_tutorias')
+        // 2. DESACTIVAR: Marcar TODAS las ofertas como INACTIVAS (USANDO 'activo')
+        $sql_deactivate = "UPDATE ofertas_tutorias SET activo = 0 WHERE id_tutor = :tutor_id";
+        $stmt_deactivate = $conn->prepare($sql_deactivate);
+        $stmt_deactivate->bindParam(':tutor_id', $tutor_id, PDO::PARAM_INT);
+        $stmt_deactivate->execute();
 
-        // 1. Eliminar todas las ofertas/precios antiguas del tutor en la tabla CORREGIDA
-        // Asumiendo que oferta_tutorias tiene id_tutor
-        $sql_delete_ofertas = "DELETE FROM ofertas_tutorias WHERE id_tutor = :tutor_id";
-        $stmt_delete_m = $conn->prepare($sql_delete_ofertas);
-        $stmt_delete_m->bindParam(':tutor_id', $tutor_id, PDO::PARAM_INT);
-        $stmt_delete_m->execute();
-
-        // 2. Insertar las materias seleccionadas junto con su precio en la tabla CORREGIDA
+        // 3. UPSERT: Insertar o Reactivar
         if (!empty($materias_impartidas)) {
-            // Ajustar el INSERT para la tabla oferta_tutorias. 
-            // ASUMO que esta tabla tiene al menos: id_tutor, id_materia, y precio_hora
-            $sql_insert_oferta = "INSERT INTO ofertas_tutorias (id_tutor, id_materia, precio_hora, activo) 
-                       VALUES (:tutor_id, :id_materia, :precio_hora, :activo)";
-            $stmt_insert_m = $conn->prepare($sql_insert_oferta);
+            
+            // LA CORRECCIÓN CLAVE ESTÁ AQUÍ (activo = 1)
+            $sql_upsert_oferta = "
+                INSERT INTO ofertas_tutorias (id_tutor, id_materia, precio_hora, activo) 
+                VALUES (:tutor_id, :id_materia, :precio_hora, 1)
+                ON DUPLICATE KEY UPDATE 
+                    precio_hora = VALUES(precio_hora), 
+                    activo = 1; 
+            ";
+            $stmt_upsert_m = $conn->prepare($sql_upsert_oferta);
 
             foreach ($materias_impartidas as $materia_data) {
-                $id_materia = (int) ($materia_data['id'] ?? 0);
-                $precio = (float) ($materia_data['precio'] ?? 0.00);
+                $id_materia = filter_var($materia_data['id'] ?? 0, FILTER_VALIDATE_INT);
+                $precio = filter_var($materia_data['precio'] ?? 0.00, FILTER_VALIDATE_FLOAT);
 
-                // Definir el valor para la columna 'activo' (asumimos 1 para activo)
-                $activo = 1;
-
-                if ($id_materia > 0) {
-                    $stmt_insert_m->bindParam(':tutor_id', $tutor_id, PDO::PARAM_INT);
-                    $stmt_insert_m->bindParam(':id_materia', $id_materia, PDO::PARAM_INT);
-                    $stmt_insert_m->bindParam(':precio_hora', $precio);
-                    $stmt_insert_m->bindParam(':activo', $activo, PDO::PARAM_INT); // <-- NUEVA LÍNEA CLAVE
-                    $stmt_insert_m->execute();
+                // Solo procesar si el precio es mayor a cero.
+                if ($id_materia > 0 && $precio !== false && $precio > 0.00) { 
+                    $precio_sql = number_format($precio, 2, '.', ''); 
+                    
+                    $stmt_upsert_m->bindParam(':tutor_id', $tutor_id, PDO::PARAM_INT);
+                    $stmt_upsert_m->bindParam(':id_materia', $id_materia, PDO::PARAM_INT);
+                    $stmt_upsert_m->bindParam(':precio_hora', $precio_sql); 
+                    $stmt_upsert_m->execute();
+                    $materias_insertadas++;
                 }
             }
         }
 
         $conn->commit();
-
-        // Redireccionar con éxito, manteniendo la pestaña de materias activa
-        header('Location: configurar_perfil.php?exito=materias&anchor=materias');
-        exit;
+        redirigir('exito', 'materias');
 
     } catch (PDOException $e) {
         $conn->rollBack();
-        // Nota: Si quieres ver el error de la BD, cambia el header por un die()
-        // die("Error en oferta_tutorias: " . $e->getMessage()); 
-        $error_detail = urlencode("Error BD: " . $e->getMessage());
-        header("Location: configurar_perfil.php?error=db_materias&anchor=materias");
-        exit;
+        
+        // **SI ESTO SIGUE FALLANDO, USA ESTA LÍNEA PARA VER EL ERROR EXACTO:**
+        // die("Fallo en UPSERT/Desactivación: " . $e->getMessage()); 
+        
+        error_log("Error de BD en procesar_perfil.php (materias): " . $e->getMessage()); 
+        redirigir('error', 'db_materias');
     }
 }
 

@@ -77,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
     
     // Redirigir al mismo archivo para limpiar el POST y mostrar el mensaje
-    header("Location: Ver_tutorias.php");
+    header("Location: VerTutorias.php");
     exit();
 }
 // --- FIN LÓGICA DE PROCESAMIENTO ---
@@ -203,7 +203,7 @@ unset($_SESSION['tipo_mensaje']);
                                                 // Si el tutor cerró, invitamos a calificar si no lo ha hecho
                                                 $mostrar_boton_calificar = true;
                                             } else {
-                                                $label_estado = 'CALIFICADA';
+                                                $label_estado = 'FINALIZADA';
                                             }
 
                                         } elseif ($estado === 'CONFIRMADA') {
@@ -337,7 +337,7 @@ unset($_SESSION['tipo_mensaje']);
                                             <div class="modal fade" id="modalCalificar-<?= $tutoria['solicitud_id'] ?>" tabindex="-1" aria-labelledby="modalCalificarLabel-<?= $tutoria['solicitud_id'] ?>" aria-hidden="true">
                                                 <div class="modal-dialog">
                                                     <div class="modal-content">
-                                                        <form method="POST" action="">
+                                                        <form method="POST" action="VerTutorias.php">
                                                             <input type="hidden" name="action" value="calificar">
                                                             <div class="modal-header">
                                                                 <h5 class="modal-title" id="modalCalificarLabel-<?= $tutoria['solicitud_id'] ?>">

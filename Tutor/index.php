@@ -70,7 +70,7 @@ $id_tutor = $_SESSION['id'];
                             $total_horas_impartidas = $stmt_horas->fetch(PDO::FETCH_ASSOC)['total_horas'] ?? 0;
 
                             // 3. Solicitudes Pendientes de Revisión (Asumimos estado 'SOLICITADA' o 'PENDIENTE')
-                            $sql_pendientes = "SELECT COUNT(id) AS total FROM solicitudes_tutorias WHERE id_tutor = :id_tutor AND estado = 'SOLICITADA'";
+                            $sql_pendientes = "SELECT COUNT(id) AS total FROM solicitudes_tutorias WHERE id_tutor = :id_tutor AND estado = 'PENDIENTE'";
                             $stmt_pendientes = $conn->prepare($sql_pendientes);
                             $stmt_pendientes->bindParam(':id_tutor', $id_tutor, PDO::PARAM_INT);
                             $stmt_pendientes->execute();

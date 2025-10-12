@@ -1,7 +1,8 @@
 <?php
 // NOTA IMPORTANTE: Si 'Includes/Nav.php' no inicia la sesión, debes agregar session_start() aquí.
 // Pero asumiremos que ya lo hace.
-include 'Includes/Nav.php'; 
+// Se incluye el archivo de navegación
+include 'Includes/Nav.php';
 
 // 1. Verificación de Seguridad
 if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'tutor') {
@@ -14,8 +15,7 @@ $id_tutor = $_SESSION['id'];
 include "../Includes/db.php";
 
 // 1. CONSULTA DE TUTORÍAS CONFIRMADAS Y COMPLETADAS RECIENTES
-// Incluye CONFIRMADAS (futuras o pasadas pendientes de cierre) 
-// e incluye COMPLETADAS (solo las de los últimos 7 días)
+// La consulta se mantiene igual, ya que es correcta y segura.
 $sql_proximas = "
     SELECT 
         s.id AS solicitud_id,
@@ -35,8 +35,6 @@ $sql_proximas = "
     AND (
         s.estado = 'CONFIRMADA'
         OR (s.estado = 'COMPLETADA' AND s.fecha_cierre >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)) 
-        /* NOTA: Usar fecha_cierre en lugar de fecha para COMPLETADAS, 
-           asumiendo que creaste la columna como acordamos. */
     )
     ORDER BY s.fecha ASC, s.hora_inicio ASC
 ";
@@ -47,7 +45,7 @@ try {
     $proximas_tutorias = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     // Es bueno registrar el error, pero no exponerlo al usuario final.
-    error_log("Error al cargar próximas tutorías: " . $e->getMessage()); 
+    error_log("Error al cargar próximas tutorías: " . $e->getMessage());
     $proximas_tutorias = [];
     $error_db = "Error al cargar la lista de tutorías. Intente más tarde.";
 }
@@ -114,18 +112,19 @@ try {
                                                 <th>Estudiante</th>
                                                 <th>Fecha</th>
                                                 <th>Hora</th>
-                                                <th>Costo</th> <th>Estado</th>
+                                                <th>Costo</th>
+                                                <th>Estado</th>
                                                 <th data-sortable="false">Acción</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <?php foreach ($proximas_tutorias as $t):
-                                                // Lógica para determinar si la sesión ya pasó
+                                                // Lógica de Tiempos
                                                 $timestamp_inicio = strtotime($t['fecha'] . ' ' . $t['hora_inicio']);
                                                 $timestamp_fin = strtotime($t['fecha'] . ' ' . $t['hora_fin']);
                                                 $sesion_ya_paso = ($timestamp_fin < time());
 
-                                                // Lógica para el formato de duración (sin cambios)
+                                                // Lógica para el formato de duración (se mantiene)
                                                 $duracion_horas = floatval($t['duracion']);
                                                 if ($duracion_horas < 1 && $duracion_horas > 0) {
                                                     $duracion_str = ($duracion_horas * 60) . ' min.';
@@ -134,6 +133,17 @@ try {
                                                 } else {
                                                     $duracion_str = 'N/A';
                                                 }
+                                                
+                                                // Lógica de Estado (simplificada y centralizada para la tabla)
+                                                $badge_class = 'bg-primary';
+                                                $estado_texto = 'PRÓXIMA';
+                                                if ($t['estado'] === 'COMPLETADA') {
+                                                    $badge_class = 'bg-success';
+                                                    $estado_texto = 'COMPLETADA';
+                                                } elseif ($sesion_ya_paso && $t['estado'] === 'CONFIRMADA') {
+                                                    $badge_class = 'bg-warning text-dark';
+                                                    $estado_texto = 'PENDIENTE DE CIERRE';
+                                                }
                                                 ?>
                                                 <tr>
                                                     <td>#<?= htmlspecialchars($t['solicitud_id']) ?></td>
@@ -141,19 +151,9 @@ try {
                                                     <td><?= htmlspecialchars($t['estudiante']) ?></td>
                                                     <td><?= date('d/m/Y', strtotime($t['fecha'])) ?></td>
                                                     <td><?= date('h:i A', $timestamp_inicio) ?></td>
-                                                    <td class="text-success fw-bold">$<?= number_format($t['precio_total'], 2) ?></td> <td>
-                                                        <?php
-                                                        if ($t['estado'] === 'COMPLETADA'):
-                                                            $badge_class = 'bg-success';
-                                                            $estado_texto = 'COMPLETADA';
-                                                        elseif ($sesion_ya_paso && $t['estado'] === 'CONFIRMADA'):
-                                                            $badge_class = 'bg-warning text-dark';
-                                                            $estado_texto = 'PENDIENTE DE CIERRE';
-                                                        else:
-                                                            $badge_class = 'bg-primary';
-                                                            $estado_texto = 'PRÓXIMA';
-                                                        endif;
-                                                        ?>
+                                                    <td class="text-success fw-bold">
+                                                        $<?= number_format($t['precio_total'], 2) ?></td>
+                                                    <td>
                                                         <span class="badge <?= $badge_class ?>"><?= $estado_texto ?></span>
                                                     </td>
                                                     <td>
@@ -165,24 +165,44 @@ try {
                                                             </a>
                                                         <?php endif; ?>
 
-                                                        <?php if ($t['estado'] === 'CONFIRMADA' && $sesion_ya_paso): ?>
+                                                        <?php if ($t['estado'] === 'CONFIRMADA'): ?>
                                                             <button type="button" class="btn btn-sm btn-success me-2"
-                                                                title="Marcar como Completada" data-bs-toggle="modal"
-                                                                data-bs-target="#modalFinalizar-<?= $t['solicitud_id'] ?>">
-                                                                <i class="fas fa-check-circle"></i>
+                                                                title="Finalizar Sesión Manualmente" data-bs-toggle="modal"
+                                                                data-bs-target="#modalGenericoFinalizar"
+                                                                data-solicitud-id="<?= htmlspecialchars($t['solicitud_id']) ?>"
+                                                                data-materia="<?= htmlspecialchars($t['materia']) ?>"
+                                                                data-estudiante="<?= htmlspecialchars($t['estudiante']) ?>"
+                                                                data-fecha="<?= date('d/m/Y', strtotime($t['fecha'])) ?>">
+                                                                <i class="fas fa-check-circle"></i> Finalizar
                                                             </button>
                                                         <?php endif; ?>
 
                                                         <button type="button" class="btn btn-sm btn-info me-2"
                                                             title="Ver Detalles de la Reserva" data-bs-toggle="modal"
-                                                            data-bs-target="#modalDetalle-<?= $t['solicitud_id'] ?>">
+                                                            data-bs-target="#modalGenericoDetalle"
+                                                            data-solicitud-id="<?= htmlspecialchars($t['solicitud_id']) ?>"
+                                                            data-materia="<?= htmlspecialchars($t['materia']) ?>"
+                                                            data-estudiante="<?= htmlspecialchars($t['estudiante']) ?>"
+                                                            data-fecha="<?= date('d/m/Y', strtotime($t['fecha'])) ?>"
+                                                            data-hora-inicio="<?= date('h:i A', $timestamp_inicio) ?>"
+                                                            data-hora-fin="<?= date('h:i A', $timestamp_fin) ?>"
+                                                            data-duracion="<?= htmlspecialchars($duracion_str) ?>"
+                                                            data-costo="$<?= number_format($t['precio_total'], 2) ?>"
+                                                            data-estado-texto="<?= htmlspecialchars($estado_texto) ?>"
+                                                            data-estado-clase="<?= htmlspecialchars($badge_class) ?>"
+                                                            data-sesion-paso="<?= $sesion_ya_paso ? 'true' : 'false' ?>"
+                                                            data-estado-raw="<?= htmlspecialchars($t['estado']) ?>">
                                                             <i class="fas fa-info-circle"></i>
                                                         </button>
 
                                                         <?php if ($t['estado'] === 'CONFIRMADA'): ?>
                                                             <button type="button" class="btn btn-sm btn-danger"
                                                                 title="Cancelar Tutoría" data-bs-toggle="modal"
-                                                                data-bs-target="#modalCancelar-<?= $t['solicitud_id'] ?>">
+                                                                data-bs-target="#modalGenericoCancelar"
+                                                                data-solicitud-id="<?= htmlspecialchars($t['solicitud_id']) ?>"
+                                                                data-materia="<?= htmlspecialchars($t['materia']) ?>"
+                                                                data-estudiante="<?= htmlspecialchars($t['estudiante']) ?>"
+                                                                data-fecha="<?= date('d/m/Y', strtotime($t['fecha'])) ?>">
                                                                 <i class="fas fa-ban"></i>
                                                             </button>
                                                         <?php endif; ?>
@@ -193,152 +213,6 @@ try {
                                                         <?php endif; ?>
                                                     </td>
                                                 </tr>
-
-                                                <div class="modal fade" id="modalFinalizar-<?= $t['solicitud_id'] ?>"
-                                                    tabindex="-1"
-                                                    aria-labelledby="modalFinalizarLabel-<?= $t['solicitud_id'] ?>"
-                                                    aria-hidden="true">
-                                                    <div class="modal-dialog">
-                                                        <div class="modal-content">
-                                                            <form method="POST" action="procesar_cierre_tutoria.php">
-                                                                <input type="hidden" name="solicitud_id"
-                                                                    value="<?= $t['solicitud_id'] ?>">
-                                                                <div class="modal-header bg-success text-white">
-                                                                    <h5 class="modal-title"
-                                                                        id="modalFinalizarLabel-<?= $t['solicitud_id'] ?>">
-                                                                        Finalizar Tutoría #<?= $t['solicitud_id'] ?></h5>
-                                                                    <button type="button" class="btn-close btn-close-white"
-                                                                        data-bs-dismiss="modal" aria-label="Close"></button>
-                                                                </div>
-                                                                <div class="modal-body">
-                                                                    <p>Confirma que la tutoría de
-                                                                        **<?= htmlspecialchars($t['materia']) ?>** con
-                                                                        **<?= htmlspecialchars($t['estudiante']) ?>** ha sido
-                                                                        completada
-                                                                        (<?= date('d/m/Y', strtotime($t['fecha'])) ?>).</p>
-                                                                    <p class="small text-danger">Al confirmar, el estado
-                                                                        cambiará a **COMPLETADA** y se habilitará la
-                                                                        calificación para el estudiante.</p>
-                                                                </div>
-                                                                <div class="modal-footer">
-                                                                    <button type="button" class="btn btn-secondary"
-                                                                        data-bs-dismiss="modal">Cancelar</button>
-                                                                    <button type="submit" class="btn btn-success">Confirmar
-                                                                        Finalización</button>
-                                                                </div>
-                                                            </form>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <?php if ($t['estado'] === 'CONFIRMADA'): ?>
-                                                    <div class="modal fade" id="modalCancelar-<?= $t['solicitud_id'] ?>"
-                                                        tabindex="-1" aria-labelledby="modalCancelarLabel-<?= $t['solicitud_id'] ?>"
-                                                        aria-hidden="true">
-                                                        <div class="modal-dialog">
-                                                            <div class="modal-content">
-                                                                <form method="POST" action="cancelar_tutor_accion.php">
-                                                                    <input type="hidden" name="solicitud_id"
-                                                                        value="<?= $t['solicitud_id'] ?>">
-                                                                    <div class="modal-header bg-danger text-white">
-                                                                        <h5 class="modal-title"
-                                                                            id="modalCancelarLabel-<?= $t['solicitud_id'] ?>">
-                                                                            Confirmar Cancelación #<?= $t['solicitud_id'] ?></h5>
-                                                                        <button type="button" class="btn-close btn-close-white"
-                                                                            data-bs-dismiss="modal" aria-label="Close"></button>
-                                                                    </div>
-                                                                    <div class="modal-body">
-                                                                        <p>¿Estás seguro de que deseas **CANCELAR** la tutoría de
-                                                                            **<?= htmlspecialchars($t['materia']) ?>** con
-                                                                            **<?= htmlspecialchars($t['estudiante']) ?>**
-                                                                            (<?= date('d/m/Y', strtotime($t['fecha'])) ?>)?</p>
-                                                                        <p class="small text-danger">Esta acción no se puede
-                                                                            deshacer y el estudiante recibirá una notificación de
-                                                                            cancelación.</p>
-                                                                    </div>
-                                                                    <div class="modal-footer">
-                                                                        <button type="button" class="btn btn-secondary"
-                                                                            data-bs-dismiss="modal">No, Volver</button>
-                                                                        <button type="submit" class="btn btn-danger">Sí, Cancelar
-                                                                            Tutoría</button>
-                                                                    </div>
-                                                                </form>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                <?php endif; ?>
-
-                                                <div class="modal fade" id="modalDetalle-<?= $t['solicitud_id'] ?>"
-                                                    tabindex="-1" aria-labelledby="modalDetalleLabel-<?= $t['solicitud_id'] ?>"
-                                                    aria-hidden="true">
-                                                    <div class="modal-dialog modal-dialog-centered">
-                                                        <div class="modal-content">
-                                                            <div class="modal-header bg-info text-white">
-                                                                <h5 class="modal-title"
-                                                                    id="modalDetalleLabel-<?= $t['solicitud_id'] ?>">Detalle de
-                                                                    la Tutoría #<?= $t['solicitud_id'] ?></h5>
-                                                                <button type="button" class="btn-close btn-close-white"
-                                                                    data-bs-dismiss="modal" aria-label="Close"></button>
-                                                            </div>
-                                                            <div class="modal-body">
-                                                                <h4 class="text-primary mb-3">
-                                                                    <?= htmlspecialchars($t['materia']) ?>
-                                                                </h4>
-                                                                <ul class="list-group list-group-flush">
-                                                                    <li class="list-group-item">
-                                                                        <i class="fas fa-user-graduate me-2 text-muted"></i>
-                                                                        <strong>Estudiante:</strong>
-                                                                        <span
-                                                                            class="float-end"><?= htmlspecialchars($t['estudiante']) ?></span>
-                                                                    </li>
-                                                                    <li class="list-group-item">
-                                                                        <i class="fas fa-calendar-day me-2 text-muted"></i>
-                                                                        <strong>Fecha:</strong>
-                                                                        <span
-                                                                            class="float-end"><?= date('d/m/Y', strtotime($t['fecha'])) ?></span>
-                                                                    </li>
-                                                                    <li class="list-group-item">
-                                                                        <i class="fas fa-clock me-2 text-muted"></i>
-                                                                        <strong>Hora:</strong>
-                                                                        <span
-                                                                            class="float-end"><?= date('h:i A', $timestamp_inicio) ?>
-                                                                            - <?= date('h:i A', $timestamp_fin) ?></span>
-                                                                    </li>
-                                                                    <li class="list-group-item">
-                                                                        <i class="fas fa-hourglass-half me-2 text-muted"></i>
-                                                                        <strong>Duración:</strong>
-                                                                        <span class="float-end"><?= $duracion_str ?></span>
-                                                                    </li>
-                                                                    <li class="list-group-item">
-                                                                        <i class="fas fa-money-bill-wave me-2 text-muted"></i>
-                                                                        <strong>Costo:</strong>
-                                                                        <span
-                                                                            class="float-end text-success fw-bold">$<?= number_format($t['precio_total'], 2) ?></span>
-                                                                    </li>
-                                                                    <li class="list-group-item">
-                                                                        <i class="fas fa-info-circle me-2 text-muted"></i>
-                                                                        <strong>Estado:</strong>
-                                                                        <span class="float-end">
-                                                                            <span
-                                                                                class="badge <?= $badge_class ?>"><?= $estado_texto ?></span>
-                                                                        </span>
-                                                                    </li>
-                                                                </ul>
-                                                            </div>
-                                                            <div class="modal-footer">
-                                                                <button type="button" class="btn btn-secondary"
-                                                                    data-bs-dismiss="modal">Cerrar</button>
-                                                                <?php if (!$sesion_ya_paso && $t['estado'] === 'CONFIRMADA'): ?>
-                                                                    <a href="sala_virtual.php?id=<?= $t['solicitud_id'] ?>"
-                                                                        class="btn btn-primary" title="Unirse a la sala virtual">
-                                                                        <i class="fas fa-video"></i> Ir a Sesión
-                                                                    </a>
-                                                                <?php endif; ?>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
                                             <?php endforeach; ?>
                                         </tbody>
                                     </table>
@@ -356,12 +230,224 @@ try {
             <?php include 'Includes/Footer.php'; ?>
         </div>
     </div>
+
+    <div class="modal fade" id="modalGenericoFinalizar" tabindex="-1" aria-labelledby="modalGenericoFinalizarLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form id="formFinalizar" method="POST" action="procesar_cierre_tutoria.php">
+                    <input type="hidden" name="solicitud_id" id="finalizar_solicitud_id">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title" id="modalGenericoFinalizarLabel">Finalizar Tutoría <span
+                                id="finalizar_id_display"></span></h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Confirma que la tutoría de
+                            **<span id="finalizar_materia"></span>** con
+                            **<span id="finalizar_estudiante"></span>** ha sido completada
+                            (<span id="finalizar_fecha"></span>).</p>
+                        <p class="small text-danger">Al confirmar, el estado cambiará a **COMPLETADA** y se habilitará la
+                            calificación para el estudiante.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-success">Confirmar Finalización</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalGenericoCancelar" tabindex="-1" aria-labelledby="modalGenericoCancelarLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form id="formCancelar" method="POST" action="cancelar_tutor_accion.php">
+                    <input type="hidden" name="solicitud_id" id="cancelar_solicitud_id">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title" id="modalGenericoCancelarLabel">Confirmar Cancelación <span
+                                id="cancelar_id_display"></span></h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>¿Estás seguro de que deseas **CANCELAR** la tutoría de
+                            **<span id="cancelar_materia"></span>** con
+                            **<span id="cancelar_estudiante"></span>**
+                            (<span id="cancelar_fecha"></span>)?</p>
+                        <p class="small text-danger">Esta acción no se puede deshacer y el estudiante recibirá una
+                            notificación de cancelación.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, Volver</button>
+                        <button type="submit" class="btn btn-danger">Sí, Cancelar Tutoría</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="modal fade" id="modalGenericoDetalle" tabindex="-1" aria-labelledby="modalGenericoDetalleLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title" id="modalGenericoDetalleLabel">Detalle de la Tutoría <span
+                            id="detalle_id_display"></span></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h4 class="text-primary mb-3" id="detalle_materia"></h4>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <i class="fas fa-user-graduate me-2 text-muted"></i>
+                            <strong>Estudiante:</strong>
+                            <span class="float-end" id="detalle_estudiante"></span>
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-calendar-day me-2 text-muted"></i>
+                            <strong>Fecha:</strong>
+                            <span class="float-end" id="detalle_fecha"></span>
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-clock me-2 text-muted"></i>
+                            <strong>Hora:</strong>
+                            <span class="float-end">
+                                <span id="detalle_hora_inicio"></span> - <span id="detalle_hora_fin"></span>
+                            </span>
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-hourglass-half me-2 text-muted"></i>
+                            <strong>Duración:</strong>
+                            <span class="float-end" id="detalle_duracion"></span>
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-money-bill-wave me-2 text-muted"></i>
+                            <strong>Costo:</strong>
+                            <span class="float-end text-success fw-bold" id="detalle_costo"></span>
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-info-circle me-2 text-muted"></i>
+                            <strong>Estado:</strong>
+                            <span class="float-end">
+                                <span class="badge" id="detalle_estado_badge"></span>
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <a href="#" id="detalle_link_sala_virtual" class="btn btn-primary" title="Unirse a la sala virtual">
+                        <i class="fas fa-video"></i> Ir a Sesión
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"
         crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/umd/simple-datatables.min.js"
         crossorigin="anonymous"></script>
     <script src="js/datatables-simple-demo.js"></script>
     <script src="js/scripts.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Lógica para el Modal Finalizar
+            var finalizarModal = document.getElementById('modalGenericoFinalizar');
+            finalizarModal.addEventListener('show.bs.modal', function (event) {
+                var button = event.relatedTarget;
+                var id = button.getAttribute('data-solicitud-id');
+                var materia = button.getAttribute('data-materia');
+                var estudiante = button.getAttribute('data-estudiante');
+                var fecha = button.getAttribute('data-fecha');
+
+                var modalTitle = finalizarModal.querySelector('.modal-title #finalizar_id_display');
+                var modalBodyMateria = finalizarModal.querySelector('.modal-body #finalizar_materia');
+                var modalBodyEstudiante = finalizarModal.querySelector('.modal-body #finalizar_estudiante');
+                var modalBodyFecha = finalizarModal.querySelector('.modal-body #finalizar_fecha');
+                var modalFormInput = finalizarModal.querySelector('.modal-content form #finalizar_solicitud_id');
+
+                modalTitle.textContent = '#' + id;
+                modalBodyMateria.textContent = materia;
+                modalBodyEstudiante.textContent = estudiante;
+                modalBodyFecha.textContent = fecha;
+                modalFormInput.value = id;
+            });
+
+            // Lógica para el Modal Cancelar
+            var cancelarModal = document.getElementById('modalGenericoCancelar');
+            cancelarModal.addEventListener('show.bs.modal', function (event) {
+                var button = event.relatedTarget;
+                var id = button.getAttribute('data-solicitud-id');
+                var materia = button.getAttribute('data-materia');
+                var estudiante = button.getAttribute('data-estudiante');
+                var fecha = button.getAttribute('data-fecha');
+
+                var modalTitle = cancelarModal.querySelector('.modal-title #cancelar_id_display');
+                var modalBodyMateria = cancelarModal.querySelector('.modal-body #cancelar_materia');
+                var modalBodyEstudiante = cancelarModal.querySelector('.modal-body #cancelar_estudiante');
+                var modalBodyFecha = cancelarModal.querySelector('.modal-body #cancelar_fecha');
+                var modalFormInput = cancelarModal.querySelector('.modal-content form #cancelar_solicitud_id');
+
+                modalTitle.textContent = '#' + id;
+                modalBodyMateria.textContent = materia;
+                modalBodyEstudiante.textContent = estudiante;
+                modalBodyFecha.textContent = fecha;
+                modalFormInput.value = id;
+            });
+
+            // Lógica para el Modal Detalle
+            var detalleModal = document.getElementById('modalGenericoDetalle');
+            detalleModal.addEventListener('show.bs.modal', function (event) {
+                var button = event.relatedTarget;
+                var id = button.getAttribute('data-solicitud-id');
+                var materia = button.getAttribute('data-materia');
+                var estudiante = button.getAttribute('data-estudiante');
+                var fecha = button.getAttribute('data-fecha');
+                var horaInicio = button.getAttribute('data-hora-inicio');
+                var horaFin = button.getAttribute('data-hora-fin');
+                var duracion = button.getAttribute('data-duracion');
+                var costo = button.getAttribute('data-costo');
+                var estadoTexto = button.getAttribute('data-estado-texto');
+                var estadoClase = button.getAttribute('data-estado-clase');
+                var sesionPaso = button.getAttribute('data-sesion-paso') === 'true';
+                var estadoRaw = button.getAttribute('data-estado-raw');
+
+                // Inyectar datos
+                document.getElementById('detalle_id_display').textContent = '#' + id;
+                document.getElementById('detalle_materia').textContent = materia;
+                document.getElementById('detalle_estudiante').textContent = estudiante;
+                document.getElementById('detalle_fecha').textContent = fecha;
+                document.getElementById('detalle_hora_inicio').textContent = horaInicio;
+                document.getElementById('detalle_hora_fin').textContent = horaFin;
+                document.getElementById('detalle_duracion').textContent = duracion;
+                document.getElementById('detalle_costo').textContent = costo;
+
+                // Estado (Badge)
+                var estadoBadge = document.getElementById('detalle_estado_badge');
+                estadoBadge.textContent = estadoTexto;
+                estadoBadge.className = 'badge ' + estadoClase;
+
+                // Botón "Ir a Sesión"
+                var linkSalaVirtual = document.getElementById('detalle_link_sala_virtual');
+                
+                // Mostrar/Ocultar y configurar el enlace solo si es 'CONFIRMADA' y NO ha pasado.
+                if (estadoRaw === 'CONFIRMADA' && !sesionPaso) {
+                    linkSalaVirtual.href = 'sala_virtual.php?id=' + id;
+                    linkSalaVirtual.style.display = 'inline-block';
+                } else {
+                    linkSalaVirtual.style.display = 'none';
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>
