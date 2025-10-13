@@ -127,7 +127,7 @@ $solicitudes = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 </div>
                             <?php else: ?>
                                 <div class="alert alert-success">
-                                    🎉 No tienes solicitudes de tutoría **PENDIENTES** en este momento.
+                                    No tienes solicitudes de tutoría PENDIENTES en este momento.
                                 </div>
                             <?php endif; ?>
 

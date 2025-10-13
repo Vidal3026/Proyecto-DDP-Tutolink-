@@ -12,62 +12,47 @@
             <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseUsuarios"
                 aria-expanded="false" aria-controls="collapseUsuarios">
                 <div class="sb-nav-link-icon"><i class="fas fa-book-open"></i></div>
-                Gestión de Usuarios
+                Gestión
                 <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
             </a>
             <div class="collapse" id="collapseUsuarios" aria-labelledby="headingOne" data-bs-parent="#sidenavAccordion">
                 <nav class="sb-sidenav-menu-nested nav">
                     <a class="nav-link" href="GestionarUsuarios.php">Gestionar Usuarios</a>
-                    <a class="nav-link" href="Reseñas.php">Ver Perfiles</a>
-                    <a class="nav-link" href="Reseñas.php">Ver Reseñas</a>
+                    <a class="nav-link" href="GestionarMateria.php">Gestionar Materias</a>
+
                 </nav>
             </div>
-            <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseTutorias"
-                aria-expanded="false" aria-controls="collapseTutorias">
-                <div class="sb-nav-link-icon"><i class="fas fa-book-open"></i></div>
-                Gestión de Tutorías
-                <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+
+
+            <!--Movimientos y Finanzas-->
+            <div class="sb-sidenav-menu-heading">Movimientos y Finanzas</div>
+            <a class="nav-link" href="Billetera.php">
+                <div class="sb-nav-link-icon"><i class="fa-solid fa-wallet"></i></div>
+                Billetera
             </a>
-            <div class="collapse" id="collapseTutorias" aria-labelledby="headingOne" data-bs-parent="#sidenavAccordion">
-                <nav class="sb-sidenav-menu-nested nav">
-                    <a class="nav-link" href="VerTutorias.php">Todas las Tutorías</a>
-                    <a class="nav-link" href="HorariosGlobales.php">Horarios Globales</a>
-                    <a class="nav-link" href="Incidencias.php">Incidencias</a>
-                </nav>
-            </div>
+            <a class="nav-link" href="Historial.php">
+                <div class="sb-nav-link-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                Historial
+            </a>
             <a class="nav-link" href="SolicitudesAdministrador.php">
                 <div class="sb-nav-link-icon"><i class="fa-solid fa-inbox"></i></div>
-                Solicitudes Recibidas
+                Solicitudes de Retiros
             </a>
 
             <!--Estadística-->
             <div class="sb-sidenav-menu-heading">Estadísticas</div>
-            <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseEstadisticas"
-                aria-expanded="false" aria-controls="collapseEstadisticas">
+            <a class="nav-link" href="Estadisticas.php">
                 <div class="sb-nav-link-icon"><i class="fas fa-chart-bar"></i></div>
                 Estadísticas/Reportes
-                <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
             </a>
-            <div class="collapse" id="collapseEstadisticas" aria-labelledby="headingOne"
-                data-bs-parent="#sidenavAccordion">
-                <nav class="sb-sidenav-menu-nested nav">
-                    <a class="nav-link" href="UsoPlataforma.php">Uso de Plataforma</a>
-                    <a class="nav-link" href="ActividadTutorias.php">Actividad de Tutorías</a>
-                    <a class="nav-link" href="Finanzas.php">Finanzas</a>
-                </nav>
-            </div>
-
-            
+               
             <!--Herramientas-->
             <div class="sb-sidenav-menu-heading">Herramientas</div>
-            <a class="nav-link" href="Calendario.php">
-                <div class="sb-nav-link-icon"><i class="fa-solid fa-calendar"></i></div>
-                Calendario General
-            </a>
             <a class="nav-link" href="Mensajes.php">
                 <div class="sb-nav-link-icon"><i class="fas fa-comments"></i></div>
                 Mensajes / Chats
             </a>
+
         </div>
     </div>
     <center>

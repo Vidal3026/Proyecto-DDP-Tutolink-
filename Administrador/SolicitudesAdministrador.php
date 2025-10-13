@@ -54,11 +54,11 @@ $alert_type = '';
 if (isset($_GET['success'])) {
     $msg = isset($_GET['msg']) ? urldecode($_GET['msg']) : 'Acción realizada con éxito.';
     $alert_type = 'success';
-    $alert_message = "✅ **Éxito:** {$msg}";
+    $alert_message = "✅ Éxito: {$msg}";
 } elseif (isset($_GET['error'])) {
     $msg = isset($_GET['msg']) ? urldecode($_GET['msg']) : 'Ocurrió un error inesperado.';
     $alert_type = 'danger';
-    $alert_message = "❌ **Error:** {$msg}";
+    $alert_message = "❌ Error: {$msg}";
 }
 
 ?>
@@ -88,7 +88,7 @@ if (isset($_GET['success'])) {
                 <div class="container-fluid px-4">
                     <h1 class="mt-4">Gestión de Retiros</h1>
                     <ol class="breadcrumb mb-4">
-                        <li class="breadcrumb-item"><a href="index.html">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="index.php">Dashboard</a></li>
                         <li class="breadcrumb-item active">Solicitudes de Retiro</li>
                     </ol>
 

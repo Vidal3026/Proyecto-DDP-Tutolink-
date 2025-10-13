@@ -83,7 +83,7 @@ try {
                             case 'pago_fallido':
                                 $alert_type = 'danger';
                                 // 🛑 Usa el mensaje específico de la función Wallet
-                                $alert_message = "❌ **Transacción Fallida:** {$message}. Por favor, recarga tu billetera e inténtalo de nuevo.";
+                                $alert_message = "❌ Transacción Fallida: {$message}. Por favor, recarga tu billetera e inténtalo de nuevo.";
                                 break;
                             case 'no_solicitud_id':
                                 $alert_type = 'warning';
@@ -106,7 +106,7 @@ try {
                         switch ($success_code) {
                             case 'pago_confirmado':
                                 $alert_type = 'success';
-                                $alert_message = "✅ **¡Pago Confirmado!** Tu solicitud ha sido marcada como CONFIRMADA. ¡Prepara tu clase!";
+                                $alert_message = "✅ ¡Pago Confirmado! Tu solicitud ha sido marcada como CONFIRMADA. ¡Prepara tu clase!";
                                 break;
                             case 'pago_ya_confirmado':
                                 $alert_type = 'info';

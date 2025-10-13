@@ -288,4 +288,45 @@ function ejecutar_retiro_aprobado($conn, $id_tutor, $monto, $id_retiro)
         return ['success' => false, 'message' => 'Error de base de datos durante la ejecución.'];
     }
 }
+
+/**
+ * Acredita un monto al saldo del usuario y registra el movimiento.
+ * NOTA: Esta función ASUME que ya se ha iniciado una transacción (beginTransaction)
+ * en el script que la llama.
+ * * @param PDO $conn La conexión a la base de datos.
+ * @param int $user_id El ID del estudiante.
+ * @param float $monto El monto a depositar.
+ * @param string $referencia La referencia del movimiento.
+ */
+function acreditar_saldo_y_log(PDO $conn, int $user_id, float $monto, string $referencia) {
+    if ($monto <= 0) {
+        throw new Exception("El monto a depositar debe ser positivo.");
+    }
+    
+    // Obtener o crear el ID de la billetera (reutilizando tu función existente)
+    // Asumo que obtener_o_crear_billetera_id() está definida en este mismo archivo.
+    $billetera_id = obtener_o_crear_billetera_id($conn, $user_id);
+
+    // ********* GESTIÓN DE TRANSACCIÓN ELIMINADA *********
+
+    // 1. Actualizar saldo en la tabla 'billeteras'
+    $sql_update = "UPDATE billeteras SET saldo = saldo + :monto WHERE id = :billetera_id";
+    $stmt_update = $conn->prepare($sql_update);
+    $stmt_update->bindParam(':monto', $monto);
+    $stmt_update->bindParam(':billetera_id', $billetera_id, PDO::PARAM_INT);
+    $stmt_update->execute();
+    
+    // 2. Registrar movimiento en la tabla 'movimientos'
+    $sql_log = "INSERT INTO movimientos_billetera (id_billetera, monto, tipo, referencia, fecha_movimiento)
+                VALUES (:billetera_id, :monto, 'INGRESO', :referencia, NOW())";
+    $stmt_log = $conn->prepare($sql_log);
+    $stmt_log->bindParam(':billetera_id', $billetera_id, PDO::PARAM_INT);
+    $stmt_log->bindParam(':monto', $monto);
+    $stmt_log->bindParam(':referencia', $referencia);
+    $stmt_log->execute();
+    
+    // ********* GESTIÓN DE TRANSACCIÓN ELIMINADA *********
+    
+    // Ya no hay catch aquí, cualquier error será capturado por el script principal
+}
 ?>

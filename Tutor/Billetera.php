@@ -29,7 +29,7 @@ if (isset($_GET['error'])) {
     switch ($error_code) {
         case 'saldo_insuficiente':
             $alert_type = 'danger';
-            $alert_message = "❌ **Error de Retiro:** {$message}. No puedes solicitar un monto mayor a tu saldo disponible.";
+            $alert_message = "❌ Error de Retiro: {$message}. No puedes solicitar un monto mayor a tu saldo disponible.";
             break;
         case 'campos_incompletos':
             $alert_type = 'warning';
@@ -50,7 +50,7 @@ if (isset($_GET['error'])) {
     switch ($success_code) {
         case 'retiro_pendiente':
             $alert_type = 'info';
-            $alert_message = "✅ **Solicitud Enviada.** Tu solicitud de retiro está en estado PENDIENTE y será revisada por el administrador en las próximas 48 horas.";
+            $alert_message = "✅ Solicitud Enviada. Tu solicitud de retiro está en estado PENDIENTE y será revisada por el administrador en las próximas 48 horas.";
             break;
     }
 }

@@ -23,7 +23,7 @@ $alert_type = '';
 if (isset($_GET['success'])) {
     $msg = isset($_GET['msg']) ? urldecode($_GET['msg']) : 'Acción realizada con éxito.';
     $alert_type = 'success';
-    $alert_message = "✅ **Éxito:** {$msg}";
+    $alert_message = "✅ Éxito. {$msg}";
 } elseif (isset($_GET['error'])) {
     $msg = isset($_GET['msg']) ? urldecode($_GET['msg']) : 'Ocurrió un error inesperado.';
     $alert_type = 'danger';
@@ -42,7 +42,7 @@ if (isset($_GET['success'])) {
     <title>Billetera</title>
     <link href="css/styles.css" rel="stylesheet" />
     <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
-    </head>
+</head>
 
 <body>
     <div id="layoutSidenav">
@@ -71,16 +71,15 @@ if (isset($_GET['success'])) {
                                 <div class="card-body">
                                     <h5 class="card-title">Saldo Disponible</h5>
                                     <h1 class="display-4">$ <?php echo number_format($saldo_actual, 2); ?></h1>
-                                    
-                                    <button class="btn btn-light btn-sm mt-3" 
-                                        data-bs-toggle="modal"
+
+                                    <button class="btn btn-light btn-sm mt-3" data-bs-toggle="modal"
                                         data-bs-target="#modalRecargarFondos">
                                         <i class="fas fa-plus-circle"></i> Recargar Fondo
                                     </button>
                                 </div>
                             </div>
                         </div>
-                        </div>
+                    </div>
 
                     <div class="card shadow mt-4">
                         <div class="card-header bg-light">
@@ -126,40 +125,38 @@ if (isset($_GET['success'])) {
         </div>
     </div>
 
-    <div class="modal fade" id="modalRecargarFondos" tabindex="-1" aria-labelledby="modalRecargarFondosLabel" aria-hidden="true">
+    <div class="modal fade" id="modalRecargarFondos" tabindex="-1" aria-labelledby="modalRecargarFondosLabel"
+        aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title" id="modalRecargarFondosLabel">Añadir Fondos a la Billetera</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
                 <form action="procesar_recarga.php" method="POST">
                     <div class="modal-body">
-                        <p>Ingresa la cantidad que deseas recargar. Esto simula el inicio de un pago.</p>
-                        
+                        <p>Ingresa el monto que deseas recargar. El saldo se acreditará inmediatamente (simulación de
+                            pago exitoso).</p>
+
                         <div class="form-group mb-3">
                             <label for="monto_recarga">Monto a Recargar (USD)</label>
-                            <input type="number" step="0.01" min="5.00" class="form-control" id="monto_recarga" name="monto" required 
-                                   placeholder="Mínimo $5.00">
+                            <input type="number" step="0.01" min="5.00" class="form-control" id="monto_recarga"
+                                name="monto" required placeholder="Mínimo $5.00">
                         </div>
-                        
+
                         <div class="form-group mb-3">
-                            <label for="metodo_pago">Método de Pago</label>
+                            <label for="metodo_pago">Método de Pago Simulador</label>
                             <select class="form-select" id="metodo_pago" name="metodo_pago" required>
-                                <option value="">Seleccione un método</option>
+                                <option value="Pago Automático">Pago Automático (Simulación)</option>
                                 <option value="Tarjeta de Credito">Tarjeta de Crédito</option>
                                 <option value="PayPal">PayPal</option>
-                                <option value="Transferencia Bancaria">Transferencia Bancaria</option>
                             </select>
                         </div>
 
-                        <div class="alert alert-warning mt-3">
-                            ⚠️ **Simulación:** La transacción se registrará como **PENDIENTE** hasta que sea confirmada por un administrador (simulando la pasarela de pago).
+                        <div class="alert alert-success mt-3">
+                            ✔️ **Acreditación Automática:** Al presionar "Pagar", el monto se sumará a tu saldo de
+                            inmediato.
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-success">Continuar al Pago</button>
+                        <button type="submit" class="btn btn-success">Pagar y Recargar</button>
                     </div>
                 </form>
             </div>
