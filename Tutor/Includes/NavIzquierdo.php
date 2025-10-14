@@ -38,10 +38,7 @@
                 <div class="sb-nav-link-icon"><i class="fa-solid fa-calendar"></i></div>
                 Calendario
             </a>
-            <a class="nav-link" href="Mensajes.php">
-                <div class="sb-nav-link-icon"><i class="fas fa-comments"></i></div>
-                Mensajes / Chats
-            </a>
+
             <a class="nav-link" href="Configurar_perfil.php">
                 <div class="sb-nav-link-icon"><i class="fa-solid fa-gear"></i></div>
                 Configurar Perfil

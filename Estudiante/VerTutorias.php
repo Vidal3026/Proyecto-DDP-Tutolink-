@@ -10,6 +10,12 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// *** IMPORTANTE: AÑADIR ESTA LÍNEA AQUÍ ***
+// Asegura que PHP use la zona horaria correcta para todos los cálculos de fecha/hora.
+// Reemplaza 'America/El_Salvador' con la zona horaria real de tu aplicación.
+date_default_timezone_set('America/El_Salvador'); 
+// ********************************************
+
 if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'estudiante') {
     header("Location: ../Login.php");
     exit();
@@ -183,6 +189,7 @@ unset($_SESSION['tipo_mensaje']);
                                         $calificacion_valor = $tutoria['calificacion_valor'];
                                         
                                         // 1. LÓGICA DE TIEMPO
+                                        
                                         $timestamp_inicio = strtotime($tutoria['fecha'] . ' ' . $tutoria['hora_inicio']);
                                         $timestamp_fin = $timestamp_inicio + ($tutoria['duracion'] * 3600);
                                         $sesion_ya_paso = ($timestamp_fin < time()); 

@@ -46,12 +46,6 @@
                 Estadísticas/Reportes
             </a>
                
-            <!--Herramientas-->
-            <div class="sb-sidenav-menu-heading">Herramientas</div>
-            <a class="nav-link" href="Mensajes.php">
-                <div class="sb-nav-link-icon"><i class="fas fa-comments"></i></div>
-                Mensajes / Chats
-            </a>
 
         </div>
     </div>

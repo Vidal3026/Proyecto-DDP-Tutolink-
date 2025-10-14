@@ -157,7 +157,7 @@ try {
                                                         <span class="badge <?= $badge_class ?>"><?= $estado_texto ?></span>
                                                     </td>
                                                     <td>
-                                                        <?php if ($t['estado'] === 'CONFIRMADA' && !$sesion_ya_paso): ?>
+                                                        <?php if ($t['estado'] === 'CONFIRMADA'): ?>
                                                             <a href="sala_virtual.php?id=<?= $t['solicitud_id'] ?>"
                                                                 class="btn btn-sm btn-primary me-2"
                                                                 title="Ir a la Sala de Videoconferencia">
@@ -245,10 +245,10 @@ try {
                     </div>
                     <div class="modal-body">
                         <p>Confirma que la tutoría de
-                            **<span id="finalizar_materia"></span>** con
-                            **<span id="finalizar_estudiante"></span>** ha sido completada
+                            <span id="finalizar_materia"></span> con
+                            <span id="finalizar_estudiante"></span> ha sido completada
                             (<span id="finalizar_fecha"></span>).</p>
-                        <p class="small text-danger">Al confirmar, el estado cambiará a **COMPLETADA** y se habilitará la
+                        <p class="small text-danger">Al confirmar, el estado cambiará a COMPLETADA y se habilitará la
                             calificación para el estudiante.</p>
                     </div>
                     <div class="modal-footer">
@@ -273,9 +273,9 @@ try {
                             aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p>¿Estás seguro de que deseas **CANCELAR** la tutoría de
-                            **<span id="cancelar_materia"></span>** con
-                            **<span id="cancelar_estudiante"></span>**
+                        <p>¿Estás seguro de que deseas CANCELAR la tutoría de
+                            <span id="cancelar_materia"></span> con
+                            <span id="cancelar_estudiante"></span>
                             (<span id="cancelar_fecha"></span>)?</p>
                         <p class="small text-danger">Esta acción no se puede deshacer y el estudiante recibirá una
                             notificación de cancelación.</p>
@@ -440,7 +440,7 @@ try {
                 
                 // Mostrar/Ocultar y configurar el enlace solo si es 'CONFIRMADA' y NO ha pasado.
                 if (estadoRaw === 'CONFIRMADA' && !sesionPaso) {
-                    linkSalaVirtual.href = 'sala_virtual.php?id=' + id;
+                    linkSalaVirtual.href = 'sala_virtual.php';
                     linkSalaVirtual.style.display = 'inline-block';
                 } else {
                     linkSalaVirtual.style.display = 'none';

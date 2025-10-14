@@ -417,10 +417,10 @@ $ruta_imagen = !empty($tutor_detalle['perfil_imagen']) ?
                             <li class="list-group-item">**Tutor:**
                                 <?= htmlspecialchars($tutor_detalle['nombre_tutor'] . ' ' . $tutor_detalle['apellido_tutor']) ?>
                             </li>
-                            <li class="list-group-item">**Materia:** <strong id="modal_materia_nombre"></strong></li>
-                            <li class="list-group-item">**Día Solicitado:** <strong id="modal_dia_solicitado"></strong>
+                            <li class="list-group-item">Materia: <strong id="modal_materia_nombre"></strong></li>
+                            <li class="list-group-item">Día Solicitado: <strong id="modal_dia_solicitado"></strong>
                             </li>
-                            <li class="list-group-item">**Hora de Inicio:** <strong id="modal_hora_inicio"></strong>
+                            <li class="list-group-item">Hora de Inicio: <strong id="modal_hora_inicio"></strong>
                             </li>
                         </ul>
 

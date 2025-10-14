@@ -27,7 +27,7 @@ if (isset($_GET['success'])) {
 } elseif (isset($_GET['error'])) {
     $msg = isset($_GET['msg']) ? urldecode($_GET['msg']) : 'Ocurrió un error inesperado.';
     $alert_type = 'danger';
-    $alert_message = "❌ **Error:** {$msg}";
+    $alert_message = "❌ Error: {$msg}";
 }
 ?>
 <!DOCTYPE html>
@@ -150,7 +150,7 @@ if (isset($_GET['success'])) {
                         </div>
 
                         <div class="alert alert-success mt-3">
-                            ✔️ **Acreditación Automática:** Al presionar "Pagar", el monto se sumará a tu saldo de
+                            ✔️ Acreditación Automática: Al presionar "Pagar", el monto se sumará a tu saldo de
                             inmediato.
                         </div>
                     </div>

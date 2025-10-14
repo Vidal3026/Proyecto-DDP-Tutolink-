@@ -64,8 +64,8 @@ function obtener_historial_movimientos($conn, $id_billetera)
 }
 
 /**
- * Procesa el pago total de una tutoría, calculando la comisión de la plataforma (2%)
- * y registrando el ingreso neto al tutor (98%).
+ * Procesa el pago total de una tutoría, calculando la comisión de la plataforma (10%)
+ * y registrando el ingreso neto al tutor (90%).
  * * @param PDO $conn Conexión a la base de datos.
  * @param int $id_tutor ID del tutor que realizó la tutoría.
  * @param float $monto_total_pagado Monto total que el estudiante pagó por la tutoría.
@@ -74,8 +74,8 @@ function obtener_historial_movimientos($conn, $id_billetera)
  */
 function procesar_pago_tutoria($conn, $id_tutor, $monto_total_pagado, $id_solicitud)
 {
-    // Definición de la comisión (2%)
-    $comision_porcentaje = 0.02; // 2%
+    // Definición de la comisión (10%)
+    $comision_porcentaje = 0.1; // 10%
     
     // 1. CÁLCULO DE MONTOS
     $comision_monto = round($monto_total_pagado * $comision_porcentaje, 2);
@@ -110,7 +110,7 @@ function procesar_pago_tutoria($conn, $id_tutor, $monto_total_pagado, $id_solici
         $stmt_saldo->bindParam(':id_billetera', $id_billetera_tutor, PDO::PARAM_INT);
         $stmt_saldo->execute();
 
-        // --- TRANSACCIÓN B: REGISTRO DE COMISIÓN DE PLATAFORMA (2%) ---
+        // --- TRANSACCIÓN B: REGISTRO DE COMISIÓN DE PLATAFORMA (10%) ---
         // Nota: Esta es una transacción de control. No afecta el saldo del tutor, 
         // pero sí registra el egreso total del pago del estudiante como una comisión.
         
@@ -119,7 +119,7 @@ function procesar_pago_tutoria($conn, $id_tutor, $monto_total_pagado, $id_solici
         $stmt_comision = $conn->prepare($sql_comision);
         $stmt_comision->bindParam(':id_billetera', $id_billetera_tutor, PDO::PARAM_INT);
         $stmt_comision->bindParam(':monto', $comision_monto);
-        $stmt_comision->bindValue(':referencia', "Comisión Plataforma Solicitud #{$id_solicitud} (2%)");
+        $stmt_comision->bindValue(':referencia', "Comisión Plataforma Solicitud #{$id_solicitud} (10%)");
         $stmt_comision->execute();
 
         $conn->commit();
@@ -135,8 +135,8 @@ function procesar_pago_tutoria($conn, $id_tutor, $monto_total_pagado, $id_solici
 /**
  * Procesa la transacción completa de una tutoría:
  * 1. Resta el monto total de la billetera del estudiante.
- * 2. Asigna el monto neto (98%) al tutor.
- * 3. Registra la comisión (2%) de la plataforma.
+ * 2. Asigna el monto neto (90%) al tutor.
+ * 3. Registra la comisión (10%) de la plataforma.
  * * @param PDO $conn Conexión a la base de datos.
  * @param int $id_estudiante ID del usuario que paga.
  * @param int $id_tutor ID del usuario que recibe.
@@ -146,7 +146,7 @@ function procesar_pago_tutoria($conn, $id_tutor, $monto_total_pagado, $id_solici
  */
 function procesar_transaccion_tutoria($conn, $id_estudiante, $id_tutor, $monto_total_pagado, $id_solicitud)
 {
-    $comision_porcentaje = 0.02; // 2%
+    $comision_porcentaje = 0.1; // 10%
     $monto_a_restar_estudiante = abs($monto_total_pagado);
     $comision_monto = round($monto_total_pagado * $comision_porcentaje, 2);
     $ingreso_neto_tutor = $monto_total_pagado - $comision_monto; 
@@ -203,7 +203,7 @@ function procesar_transaccion_tutoria($conn, $id_estudiante, $id_tutor, $monto_t
         $stmt_update_tutor->bindParam(':id_billetera', $id_billetera_tutor, PDO::PARAM_INT);
         $stmt_update_tutor->execute();
 
-        // C. REGISTRO DE COMISIÓN (Plataforma 2%)
+        // C. REGISTRO DE COMISIÓN (Plataforma 10%)
         $sql_comision = "INSERT INTO movimientos_billetera (id_billetera, tipo, monto, referencia) 
                          VALUES (:id_b_tutor, 'COMISION', :monto, :referencia)";
         $stmt_comision = $conn->prepare($sql_comision);
@@ -211,7 +211,7 @@ function procesar_transaccion_tutoria($conn, $id_estudiante, $id_tutor, $monto_t
         // Si tienes una billetera para la plataforma, deberías usar su ID aquí.
         $stmt_comision->bindParam(':id_b_tutor', $id_billetera_tutor, PDO::PARAM_INT); 
         $stmt_comision->bindParam(':monto', $comision_monto);
-        $stmt_comision->bindValue(':referencia', "Comisión Plataforma {$referencia_pago} (2%)");
+        $stmt_comision->bindValue(':referencia', "Comisión Plataforma {$referencia_pago} (10%)");
         $stmt_comision->execute();
 
         $conn->commit();
