@@ -23,7 +23,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
   $universidadTutor = $_POST["universidadTutor"] ?? null;
   $descripcion = $_POST["descripcion"] ?? null;
 
-  // 🔎 Validaciones
+  // Validaciones
   if (empty($nombre) || empty($apellido) || empty($correo) || empty($password) || empty($rol)) {
     $status = "campos_vacios";
   } elseif (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
