@@ -8,7 +8,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
   $correo = trim($_POST['email']);
   $contrasena = $_POST['password'];
 
-  // 🔎 Validaciones
+  // Validaciones
   // Si los campos están vacíos
   if (empty($correo) || empty($contrasena)) {
     header("Location: Login.php?status=campos_vacios");
